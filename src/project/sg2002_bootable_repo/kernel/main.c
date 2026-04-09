@@ -257,8 +257,6 @@ void kernel_main(uintptr_t hartid, uintptr_t dtb_addr) {
         ctl_init_defaults(ctl);
     ctl_note_boot_abi(ctl, (uint32_t)hartid, dtb_addr);
     ctl_note_riscv_boot_identity(ctl, RISCV_ID_KERNEL, (uint32_t)hartid);
-    ensure_watchdog_started(ctl);
-
     ctl->system_flags &= ~SYSF_BOOTLOADER_ACTIVE;
     ctl->system_flags |= SYSF_KERNEL_ACTIVE;
     ctl_set_stage(ctl, STAGE_KERNEL_ENTRY);
@@ -268,6 +266,7 @@ void kernel_main(uintptr_t hartid, uintptr_t dtb_addr) {
 
     boot_worker(ctl);
     wait_for_worker_ack(ctl);
+    ensure_watchdog_started(ctl);
     ctl_set_stage(ctl, STAGE_OS_RUNNING);
     sg2002_user_led_set(1);
     console_puts("[kernel] supervisor loop\n");

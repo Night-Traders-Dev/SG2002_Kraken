@@ -65,5 +65,5 @@ void kraken_trap_panic(uint64_t mcause, uint64_t mepc,
         ctl->worker_state = CORE_FAULT;
     ctl_set_stage(ctl, STAGE_PANIC);
 
-    for (;;) cpu_relax();
+    sg2002_user_led_panic_loop();
 }

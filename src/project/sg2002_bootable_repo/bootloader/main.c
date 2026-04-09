@@ -42,10 +42,6 @@ void bootloader_main(uintptr_t hartid, uintptr_t dtb_addr) {
         ctl->system_flags |= SYSF_WORKER_IMAGE_MISSING;
     ctl_flush(ctl);
 
-    ctl_set_stage(ctl, STAGE_WATCHDOG_BOOT);
-    console_puts("[boot] starting 8051 watchdog\n");
-    sg2002_boot_8051(FW8051_DDR_ADDR);
-
     ctl_set_stage(ctl, STAGE_KERNEL_ENTRY);
     console_puts("[boot] handoff kernel\n");
     kraken_jump_to(KERNEL_LOAD_ADDR);
