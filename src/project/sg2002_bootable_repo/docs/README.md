@@ -82,6 +82,12 @@ registers and enable bit actually latch before it starts waiting for a boot ACK.
 That turns "never came online" into a concrete release failure when the register
 programming itself does not stick.
 
+For the Nano W RISC-V path, the worker reset hook is now enabled by default.
+It pulses the SG200X active-low CPU reset bit for `CPUSYS2` before the kernel
+waits for the worker boot ACK. If you need to override the published reset line
+or disable it during board experiments, set `KRAKEN_WORKER_RESET_REG`,
+`KRAKEN_WORKER_RESET_BIT`, or `KRAKEN_ENABLE_WORKER_RESET_HOOK=0` at build time.
+
 The `status` command now also reports a platform capability bitmask and platform
 error bitmask so Nano W bring-up can distinguish missing optional hooks from
 runtime failures.

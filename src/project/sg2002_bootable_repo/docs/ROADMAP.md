@@ -9,7 +9,7 @@
 
 ## Phase 2 — next hardware work
 - board validation for the optional C906 cache maintenance backend
-- actual secondary-core reset deassert hook if required by this board
+- board validation for the SG200X secondary-core reset hook on Nano W hardware
 - real 8051 watchdog/reset register programming
 - loader-side image headers and checksum validation
 
@@ -18,6 +18,7 @@
 - shared-memory trap telemetry for cause, EPC, trap value, and status snapshots
 - shared-memory capture of `misa`, `mvendorid`, `marchid`, `mimpid`, and `mhartid`
 - secondary C906 release path readback for boot-address and enable-bit latching
+- SG200X `CPUSYS2` reset pulse during worker release
 
 ## Phase 3 — kernel growth
 - timer interrupts instead of pure spin delays
