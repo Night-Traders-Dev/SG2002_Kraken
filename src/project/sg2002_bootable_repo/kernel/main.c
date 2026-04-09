@@ -14,7 +14,7 @@ static void kernel_panic(shared_ctrl_t *ctl, uint32_t reason, uint32_t flags) {
     ctl->system_flags |= flags;
     ctl_set_stage(ctl, STAGE_PANIC);
     console_puts("[kernel] panic\n");
-    for (;;) cpu_relax();
+    sg2002_user_led_panic_loop();
 }
 
 static void maybe_stage_worker(shared_ctrl_t *ctl) {
@@ -246,6 +246,7 @@ static void ensure_watchdog_started(shared_ctrl_t *ctl) {
 
 void kernel_main(uintptr_t hartid, uintptr_t dtb_addr) {
     shared_ctrl_t *ctl = shared_ctrl();
+    sg2002_user_led_blink(2);
     console_puts("Kraken kernel start\n");
     console_puts("[kernel] hart @ 0x"); console_puthex((uint32_t)hartid); console_puts("\n");
     console_puts("[kernel] dtb @ 0x"); console_puthex((uint32_t)dtb_addr); console_puts("\n");
@@ -267,6 +268,7 @@ void kernel_main(uintptr_t hartid, uintptr_t dtb_addr) {
     boot_worker(ctl);
     wait_for_worker_ack(ctl);
     ctl_set_stage(ctl, STAGE_OS_RUNNING);
+    sg2002_user_led_set(1);
     console_puts("[kernel] supervisor loop\n");
 
     uint32_t stale = 0;
@@ -277,6 +279,8 @@ void kernel_main(uintptr_t hartid, uintptr_t dtb_addr) {
         ctl->kernel_pet_seq++;
         ctl_flush(ctl);
         mailbox_send_8051(CMD_PET_8051, ctl->kernel_pet_seq);
+        if ((ctl->kernel_heartbeat & 0x1ffffu) == 0)
+            sg2002_user_led_toggle();
         usb_serial_poll();
         handle_console(ctl);
 

@@ -14,12 +14,13 @@ static void boot_panic(shared_ctrl_t *ctl, uint32_t reason, uint32_t flags) {
     ctl->system_flags |= flags;
     ctl_set_stage(ctl, STAGE_PANIC);
     console_puts("[boot] panic\n");
-    for (;;) cpu_relax();
+    sg2002_user_led_panic_loop();
 }
 
 void bootloader_main(uintptr_t hartid, uintptr_t dtb_addr) {
     shared_ctrl_t *ctl = shared_ctrl();
 
+    sg2002_user_led_blink(1);
     ctl_init_defaults(ctl);
     ctl_note_boot_abi(ctl, (uint32_t)hartid, dtb_addr);
     ctl_note_riscv_boot_identity(ctl, RISCV_ID_BOOTLOADER, (uint32_t)hartid);

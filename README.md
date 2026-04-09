@@ -23,6 +23,8 @@ and supervises the 8051 watchdog core.
 - the bare-metal DWC2 USB scaffold is now opt-in until EP0 and endpoint support land.
 - the SD builder now has a Nano W RISC-V ROM-boot mode that emits a `boot.sd`
   FIT image and copies a supplied vendor `fip.bin` into the FAT partition.
+- the Nano W user LED now provides bare-metal proof-of-life and panic patterns
+  so hardware bring-up no longer depends entirely on UART or USB.
 
 ## Build modes
 
@@ -52,6 +54,14 @@ disabled by default so the build does not advertise a working USB console before
 EP0 handling and endpoint scheduling exist. Re-enable it only for experiments:
 
 - `make EXTRA_CFLAGS='-DKRAKEN_ENABLE_USB_DWC2_SCAFFOLD=1'`
+
+For Nano W board bring-up, the current bare-metal images also drive the onboard
+user LED:
+
+- one blink: bootloader entry
+- two blinks: kernel entry
+- slow heartbeat: kernel supervisor loop is running
+- continuous blink: bootloader or kernel panic
 
 Examples:
 

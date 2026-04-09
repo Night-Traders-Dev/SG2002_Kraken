@@ -24,6 +24,7 @@
 #define SG2002_RTCSYS_WDT_BASE        0x0502D000ull
 
 #define SG2002_TOP_MISC_BASE          0x03000000ull
+#define SG2002_GPIO0_BASE             0x03020000ull
 #define SG2002_SYS_C906L_CTRL_REG     (SG2002_TOP_MISC_BASE + 0x04)
 #define SG2002_SYS_C906L_BOOTADDR_LO  (SG2002_TOP_MISC_BASE + 0x20)
 #define SG2002_SYS_C906L_BOOTADDR_HI  (SG2002_TOP_MISC_BASE + 0x24)
@@ -41,6 +42,9 @@
 #define SG2002_USB_CTRL0_DEVICE_MODE  (1u << 0)
 #define SG2002_USB_PHY_CTRL_ENABLE    (1u << 0)
 #define SG2002_USB_PHY_CTRL_PLL_EN    (1u << 1)
+#define SG2002_GPIO_SWPORTA_DR        (SG2002_GPIO0_BASE + 0x00)
+#define SG2002_GPIO_SWPORTA_DDR       (SG2002_GPIO0_BASE + 0x04)
+#define SG2002_PINMUX_GPIOA14_REG     (SG2002_TOP_MISC_BASE + 0x1038)
 #ifndef SG2002_USB_DWC2_IRQ
 #define SG2002_USB_DWC2_IRQ           14u
 #endif
@@ -70,6 +74,9 @@
 #ifndef KRAKEN_ENABLE_WORKER_RESET_HOOK
 #define KRAKEN_ENABLE_WORKER_RESET_HOOK 1
 #endif
+#ifndef KRAKEN_ENABLE_NANOW_USER_LED
+#define KRAKEN_ENABLE_NANOW_USER_LED  1
+#endif
 #ifndef KRAKEN_WORKER_RESET_REG
 #define KRAKEN_WORKER_RESET_REG       SG200X_SOFT_CPU_RSTN_REG
 #endif
@@ -78,6 +85,15 @@
 #endif
 #ifndef KRAKEN_WORKER_RESET_PULSE_CYCLES
 #define KRAKEN_WORKER_RESET_PULSE_CYCLES 256u
+#endif
+#ifndef KRAKEN_USER_LED_PIN
+#define KRAKEN_USER_LED_PIN           14u
+#endif
+#ifndef KRAKEN_USER_LED_PINMUX_GPIO
+#define KRAKEN_USER_LED_PINMUX_GPIO   0x3u
+#endif
+#ifndef KRAKEN_USER_LED_BLINK_DELAY_CYCLES
+#define KRAKEN_USER_LED_BLINK_DELAY_CYCLES 40000000u
 #endif
 
 enum core_state {
@@ -333,6 +349,11 @@ void console_puthex64(uint64_t v);
 
 void sg2002_usb_board_init(void);
 uint32_t sg2002_platform_caps(void);
+void sg2002_user_led_init(void);
+void sg2002_user_led_set(int on);
+void sg2002_user_led_toggle(void);
+void sg2002_user_led_blink(uint32_t pulses);
+void sg2002_user_led_panic_loop(void) __attribute__((noreturn));
 
 int sg2002_image_present(uintptr_t addr);
 uint32_t sg2002_crc32(const void *buf, size_t len);

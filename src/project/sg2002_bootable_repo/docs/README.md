@@ -118,10 +118,18 @@ runtime failures.
 
 For the Nano W ROM-boot path, `src/build.sh` now generates a `boot.sd` FIT
 payload that uses vendor U-Boot's normal `fatload ... boot.sd ; bootm ...`
-flow. The FIT now exposes `bootloader.bin` through the documented FIT
-`firmware` property, which lets vendor U-Boot load the other Kraken binaries as
-`loadables` before jumping directly to the bootloader entry point. You must
-still supply a vendor-built `fip.bin` for the card to be ROM-bootable.
+flow. The FIT now boots `kernel.bin` directly as the primary payload, carries
+the vendor `sg2002_licheervnano_sd` DTB, and preloads `worker.bin` plus
+`mars_mcu_fw.bin` through FIT `loadables`. You must still supply a
+vendor-built `fip.bin` for the card to be ROM-bootable.
+
+For bring-up without UART, the Nano W user LED now mirrors the major boot
+milestones:
+
+- one blink when `bootloader.bin` starts;
+- two blinks when `kernel.bin` starts;
+- a slow heartbeat while the kernel supervisor loop is alive;
+- continuous blinking if bootloader or kernel panics.
 
 ## Recent USB work
 
