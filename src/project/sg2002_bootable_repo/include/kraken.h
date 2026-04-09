@@ -24,6 +24,7 @@
 #define SG2002_RTCSYS_WDT_BASE        0x0502D000ull
 
 #define SG2002_TOP_MISC_BASE          0x03000000ull
+#define SG2002_GPIO0_BASE             0x03020000ull
 #define SG2002_SYS_C906L_CTRL_REG     (SG2002_TOP_MISC_BASE + 0x04)
 #define SG2002_SYS_C906L_BOOTADDR_LO  (SG2002_TOP_MISC_BASE + 0x20)
 #define SG2002_SYS_C906L_BOOTADDR_HI  (SG2002_TOP_MISC_BASE + 0x24)
@@ -41,19 +42,36 @@
 #define SG2002_USB_CTRL0_DEVICE_MODE  (1u << 0)
 #define SG2002_USB_PHY_CTRL_ENABLE    (1u << 0)
 #define SG2002_USB_PHY_CTRL_PLL_EN    (1u << 1)
+#define SG2002_GPIO_SWPORTA_DR        (SG2002_GPIO0_BASE + 0x00)
+#define SG2002_GPIO_SWPORTA_DDR       (SG2002_GPIO0_BASE + 0x04)
+#define SG2002_PINMUX_GPIOA14_REG     (SG2002_TOP_MISC_BASE + 0x1038)
 #ifndef SG2002_USB_DWC2_IRQ
 #define SG2002_USB_DWC2_IRQ           14u
 #endif
 
 #define KRAKEN_MAGIC                  0x4B52414Bu
 #define KRAKEN_VERSION                6u
+#define KRAKEN_PERSIST_MAGIC          0x4B504C47u
+#define KRAKEN_PERSIST_VERSION        1u
 #define KRAKEN_STAGED_IMAGE_MAGIC     0x4B535447u
 #define KRAKEN_STAGED_IMAGE_TAIL      0x4B454E44u
 #define KRAKEN_STAGED_IMAGE_VERSION   1u
+#define KRAKEN_BOOT_CYCLES_PER_MS     850000u
+#define WORKER_ACK_TIMEOUT_MS         50u
+#define WORKER_ACK_SPINS \
+    ((WORKER_ACK_TIMEOUT_MS * KRAKEN_BOOT_CYCLES_PER_MS) / 64u)
+#define WORKER_STALE_TIMEOUT_MS       100u
+#define WORKER_STALE_SPINS \
+    ((WORKER_STALE_TIMEOUT_MS * KRAKEN_BOOT_CYCLES_PER_MS) / 1000u)
 #define WORKER_IMAGE_PROBE_WORDS      8u
 #define KRAKEN_FAULT_LOG_SIZE         16u
+#define KRAKEN_TRACE_LOG_SIZE         32u
+#define KRAKEN_PERSIST_LOG_CAPACITY   256u
 #define USB_SERIAL_RING_SIZE          512u
 #define USB_SERIAL_PROTO_ACM          1u
+#define KRAKEN_STRLIT_BYTES(lit)      (sizeof(lit))
+#define KRAKEN_STRLIT_LEN(lit)        (sizeof(lit) - 1u)
+#define KRAKEN_PERSIST_LOG_ADDR       (SHARED_CTRL_ADDR + 0x4000ull)
 
 #ifndef WORKER_STAGING_ADDR
 #define WORKER_STAGING_ADDR           0x00000000ull
@@ -64,8 +82,14 @@
 #ifndef KRAKEN_ENABLE_PLATFORM_DCACHE_OPS
 #define KRAKEN_ENABLE_PLATFORM_DCACHE_OPS 0
 #endif
+#ifndef KRAKEN_ENABLE_USB_DWC2_SCAFFOLD
+#define KRAKEN_ENABLE_USB_DWC2_SCAFFOLD 0
+#endif
 #ifndef KRAKEN_ENABLE_WORKER_RESET_HOOK
 #define KRAKEN_ENABLE_WORKER_RESET_HOOK 1
+#endif
+#ifndef KRAKEN_ENABLE_NANOW_USER_LED
+#define KRAKEN_ENABLE_NANOW_USER_LED  1
 #endif
 #ifndef KRAKEN_WORKER_RESET_REG
 #define KRAKEN_WORKER_RESET_REG       SG200X_SOFT_CPU_RSTN_REG
@@ -75,6 +99,21 @@
 #endif
 #ifndef KRAKEN_WORKER_RESET_PULSE_CYCLES
 #define KRAKEN_WORKER_RESET_PULSE_CYCLES 256u
+#endif
+#ifndef KRAKEN_USER_LED_PIN
+#define KRAKEN_USER_LED_PIN           14u
+#endif
+#ifndef KRAKEN_USER_LED_PINMUX_GPIO
+#define KRAKEN_USER_LED_PINMUX_GPIO   0x3u
+#endif
+#ifndef KRAKEN_USER_LED_BLINK_DELAY_CYCLES
+#define KRAKEN_USER_LED_BLINK_DELAY_CYCLES 120000000u
+#endif
+#ifndef KRAKEN_USER_LED_DIAG_DELAY_CYCLES
+#define KRAKEN_USER_LED_DIAG_DELAY_CYCLES 90000000u
+#endif
+#ifndef KRAKEN_USER_LED_DIAG_GROUP_GAP_CYCLES
+#define KRAKEN_USER_LED_DIAG_GROUP_GAP_CYCLES 220000000u
 #endif
 
 enum core_state {
@@ -157,6 +196,35 @@ enum kraken_platform_errors {
     PLATERR_WORKER_RELEASE_FAILED  = 1u << 4,
 };
 
+enum kraken_trace_code {
+    TRACE_BOOT_ENTRY             = 0x1000u,
+    TRACE_BOOT_IMAGES_READY      = 0x1001u,
+    TRACE_BOOT_HANDOFF_KERNEL    = 0x1002u,
+    TRACE_KERNEL_ENTRY           = 0x2000u,
+    TRACE_KERNEL_BOOT_WORKER     = 0x2001u,
+    TRACE_KERNEL_WAIT_ACK        = 0x2002u,
+    TRACE_KERNEL_ACK_OK          = 0x2003u,
+    TRACE_KERNEL_WATCHDOG_START  = 0x2004u,
+    TRACE_KERNEL_SUPERVISOR_LOOP = 0x2005u,
+    TRACE_KERNEL_WORKER_FAULT    = 0x2006u,
+    TRACE_KERNEL_WORKER_STALE    = 0x2007u,
+    TRACE_KERNEL_RESTART_WORKER  = 0x2008u,
+    TRACE_KERNEL_HEARTBEAT       = 0x2009u,
+    TRACE_WORKER_ENTRY           = 0x3000u,
+    TRACE_WORKER_CMD_BOOT        = 0x3001u,
+    TRACE_WORKER_CMD_RUN_JOB     = 0x3002u,
+    TRACE_WORKER_CMD_PANIC       = 0x3003u,
+    TRACE_WORKER_CMD_STOP        = 0x3004u,
+    TRACE_TRAP_PANIC             = 0x4000u,
+};
+
+enum kraken_persist_event_kind {
+    PERSIST_EVT_STAGE        = 1u,
+    PERSIST_EVT_TRACE        = 2u,
+    PERSIST_EVT_FAULT        = 3u,
+    PERSIST_EVT_BOOT_SUMMARY = 4u,
+};
+
 enum sg2002_worker_release_status {
     SG2002_WORKER_RELEASE_OK = 0,
     SG2002_WORKER_RELEASE_BOOTADDR_LO_MISMATCH = 1,
@@ -191,6 +259,24 @@ typedef struct {
     volatile uint32_t arg0;
     volatile uint32_t arg1;
 } kraken_fault_record_t;
+
+typedef struct {
+    volatile uint32_t source;
+    volatile uint32_t code;
+    volatile uint32_t arg0;
+    volatile uint32_t arg1;
+} kraken_trace_record_t;
+
+typedef struct {
+    volatile uint32_t seq;
+    volatile uint32_t boot_count;
+    volatile uint32_t kind;
+    volatile uint32_t source;
+    volatile uint32_t code;
+    volatile uint32_t arg0;
+    volatile uint32_t arg1;
+    volatile uint32_t stage;
+} kraken_persist_record_t;
 
 enum kraken_riscv_identity_slot {
     RISCV_ID_BOOTLOADER = 0,
@@ -239,30 +325,88 @@ typedef struct {
     volatile uint32_t usb_tx_tail;              /* 0x70 */
     volatile uint32_t usb_last_error;           /* 0x74 */
     volatile uint32_t usb_console_enabled;      /* 0x78 */
-    volatile uint32_t platform_caps;
-    volatile uint32_t platform_errors;
-    volatile uint32_t fault_log_head;
-    volatile uint32_t fault_log_count;
-    volatile uint32_t fault_last_tag;
-    volatile uint32_t fault_last_code;
-    volatile uint32_t fault_last_arg0;
-    volatile uint32_t fault_last_arg1;
-    volatile uint32_t trap_count;
-    volatile uint32_t trap_last_source;
-    volatile uint32_t trap_last_cause;
-    volatile uint32_t trap_last_epc;
-    volatile uint32_t trap_last_tval;
-    volatile uint32_t trap_last_status;
-    volatile uint32_t reserved0;
-    volatile uint32_t reserved1;
-    volatile kraken_riscv_identity_t riscv_identity[RISCV_IDENTITY_SLOTS];
-    volatile kraken_fault_record_t fault_log[KRAKEN_FAULT_LOG_SIZE];
-    volatile uint8_t usb_rx_ring[USB_SERIAL_RING_SIZE];
-    volatile uint8_t usb_tx_ring[USB_SERIAL_RING_SIZE];
+    volatile uint32_t platform_caps;            /* 0x7c */
+    volatile uint32_t platform_errors;          /* 0x80 */
+    volatile uint32_t fault_log_head;           /* 0x84 */
+    volatile uint32_t fault_log_count;          /* 0x88 */
+    volatile uint32_t fault_last_tag;           /* 0x8c */
+    volatile uint32_t fault_last_code;          /* 0x90 */
+    volatile uint32_t fault_last_arg0;          /* 0x94 */
+    volatile uint32_t fault_last_arg1;          /* 0x98 */
+    volatile uint32_t trap_count;               /* 0x9c */
+    volatile uint32_t trap_last_source;         /* 0xa0 */
+    volatile uint32_t trap_last_cause;          /* 0xa4 */
+    volatile uint32_t trap_last_epc;            /* 0xa8 */
+    volatile uint32_t trap_last_tval;           /* 0xac */
+    volatile uint32_t trap_last_status;         /* 0xb0 */
+    volatile uint32_t boot_hartid;              /* 0xb4 */
+    volatile uint32_t boot_dtb_addr;            /* 0xb8 */
+    volatile kraken_riscv_identity_t riscv_identity[RISCV_IDENTITY_SLOTS]; /* 0xbc */
+    volatile kraken_fault_record_t fault_log[KRAKEN_FAULT_LOG_SIZE];        /* 0x0f8 */
+    volatile uint8_t usb_rx_ring[USB_SERIAL_RING_SIZE];                     /* 0x1f8 */
+    volatile uint8_t usb_tx_ring[USB_SERIAL_RING_SIZE];                     /* 0x3f8 */
+    volatile uint32_t trace_log_head;
+    volatile uint32_t trace_log_count;
+    volatile uint32_t trace_last_source;
+    volatile uint32_t trace_last_code;
+    volatile kraken_trace_record_t trace_log[KRAKEN_TRACE_LOG_SIZE];
 } shared_ctrl_t;
+
+typedef struct {
+    volatile uint32_t magic;
+    volatile uint32_t version;
+    volatile uint32_t write_head;
+    volatile uint32_t record_count;
+    volatile uint32_t next_seq;
+    volatile uint32_t last_boot_count;
+    volatile uint32_t last_reset_reason;
+    volatile uint32_t last_stage;
+    volatile uint32_t last_system_flags;
+    volatile uint32_t last_trace_source;
+    volatile uint32_t last_trace_code;
+    volatile uint32_t last_fault_tag;
+    volatile uint32_t last_fault_code;
+    volatile kraken_persist_record_t records[KRAKEN_PERSIST_LOG_CAPACITY];
+} kraken_persist_log_t;
+
+_Static_assert(offsetof(shared_ctrl_t, system_stage) == 0x08,
+               "8051 xdata offset mismatch: system_stage");
+_Static_assert(offsetof(shared_ctrl_t, system_flags) == 0x0c,
+               "8051 xdata offset mismatch: system_flags");
+_Static_assert(offsetof(shared_ctrl_t, reset_reason) == 0x10,
+               "8051 xdata offset mismatch: reset_reason");
+_Static_assert(offsetof(shared_ctrl_t, kernel_heartbeat) == 0x20,
+               "8051 xdata offset mismatch: kernel_heartbeat");
+_Static_assert(offsetof(shared_ctrl_t, worker_heartbeat) == 0x24,
+               "8051 xdata offset mismatch: worker_heartbeat");
+_Static_assert(offsetof(shared_ctrl_t, worker_state) == 0x28,
+               "8051 xdata offset mismatch: worker_state");
+_Static_assert(offsetof(shared_ctrl_t, kernel_pet_seq) == 0x30,
+               "8051 xdata offset mismatch: kernel_pet_seq");
+_Static_assert(offsetof(shared_ctrl_t, watchdog_last_kernel_seq) == 0x34,
+               "8051 xdata offset mismatch: watchdog_last_kernel_seq");
+_Static_assert(offsetof(shared_ctrl_t, watchdog_last_worker_seq) == 0x38,
+               "8051 xdata offset mismatch: watchdog_last_worker_seq");
+_Static_assert(offsetof(shared_ctrl_t, watchdog_pet_count) == 0x3c,
+               "8051 xdata offset mismatch: watchdog_pet_count");
+_Static_assert(sizeof(shared_ctrl_t) <= (WORKER_LOAD_ADDR - SHARED_CTRL_ADDR),
+               "shared_ctrl_t overflows its reserved DDR region");
+_Static_assert((KRAKEN_PERSIST_LOG_CAPACITY &
+                (KRAKEN_PERSIST_LOG_CAPACITY - 1u)) == 0u,
+               "persistent log capacity must be a power of two");
+_Static_assert(KRAKEN_PERSIST_LOG_ADDR >=
+               (SHARED_CTRL_ADDR + sizeof(shared_ctrl_t)),
+               "persistent log overlaps shared_ctrl_t");
+_Static_assert((KRAKEN_PERSIST_LOG_ADDR + sizeof(kraken_persist_log_t)) <=
+               WORKER_LOAD_ADDR,
+               "persistent log overflows reserved shared DDR");
 
 static inline shared_ctrl_t *shared_ctrl(void) {
     return (shared_ctrl_t *)(uintptr_t)SHARED_CTRL_ADDR;
+}
+
+static inline kraken_persist_log_t *persistent_log(void) {
+    return (kraken_persist_log_t *)(uintptr_t)KRAKEN_PERSIST_LOG_ADDR;
 }
 
 static inline void fence_rw(void) {
@@ -304,14 +448,19 @@ void ctl_invalidate(shared_ctrl_t *ctl);
 void ctl_init_defaults(shared_ctrl_t *ctl);
 void ctl_set_stage(shared_ctrl_t *ctl, uint32_t stage);
 uint32_t ctl_next_cmd_seq(shared_ctrl_t *ctl);
+void ctl_note_boot_abi(shared_ctrl_t *ctl, uint32_t hartid, uintptr_t dtb_addr);
 void ctl_fault_log(shared_ctrl_t *ctl, uint32_t tag, uint32_t code,
+                   uint32_t arg0, uint32_t arg1);
+void ctl_trace_log(shared_ctrl_t *ctl, uint32_t source, uint32_t code,
                    uint32_t arg0, uint32_t arg1);
 void ctl_note_trap(shared_ctrl_t *ctl, uint32_t source_tag,
                    uint64_t mcause, uint64_t mepc,
                    uint64_t mtval, uint64_t mstatus);
 void ctl_note_riscv_identity(shared_ctrl_t *ctl, uint32_t slot);
+void ctl_note_riscv_boot_identity(shared_ctrl_t *ctl, uint32_t slot, uint32_t hartid);
 void ctl_set_platform_error(shared_ctrl_t *ctl, uint32_t error_mask);
 void ctl_clear_platform_error(shared_ctrl_t *ctl, uint32_t error_mask);
+void ctl_persist_clear(void);
 
 void usb_serial_init(void);
 void usb_serial_poll(void);
@@ -328,6 +477,12 @@ void console_puthex64(uint64_t v);
 
 void sg2002_usb_board_init(void);
 uint32_t sg2002_platform_caps(void);
+void sg2002_user_led_init(void);
+void sg2002_user_led_set(int on);
+void sg2002_user_led_toggle(void);
+void sg2002_user_led_blink(uint32_t pulses);
+void sg2002_user_led_show_persist_summary(const kraken_persist_log_t *log);
+void sg2002_user_led_panic_loop(void) __attribute__((noreturn));
 
 int sg2002_image_present(uintptr_t addr);
 uint32_t sg2002_crc32(const void *buf, size_t len);
@@ -338,9 +493,10 @@ int sg2002_validate_staged_image(uintptr_t addr, size_t max_len,
                                  uintptr_t expected_load_addr,
                                  uintptr_t expected_entry_addr,
                                  kraken_staged_image_footer_t *footer);
-void sg2002_copy_image(uintptr_t dst, uintptr_t src, size_t max_len, size_t *copied_len);
+void sg2002_copy_image(uintptr_t dst, uintptr_t src, size_t len, size_t *copied_len);
 int sg2002_release_worker_core(uintptr_t entry_addr);
 void sg2002_boot_8051(uintptr_t entry_addr);
+typedef void (*kraken_entry_fn_t)(uintptr_t hartid, uintptr_t dtb_addr);
 void kraken_jump_to(uintptr_t entry_addr) __attribute__((noreturn));
 void kraken_trap_panic(uint64_t mcause, uint64_t mepc,
                        uint64_t mtval, uint64_t mstatus)

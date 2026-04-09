@@ -8,6 +8,10 @@ PACKIHX ?= packihx
 PYTHON ?= python3
 MAKE ?= make
 
+ifeq ($(shell command -v $(SDCC) 2>/dev/null),)
+$(error SDCC ($(SDCC)) not found. Install SDCC to build watch8051. On Debian/Ubuntu: sudo apt install sdcc)
+endif
+
 RV_MARCH ?= rv64imac
 RV_MABI ?= lp64
 EXTRA_CFLAGS ?=
@@ -15,7 +19,7 @@ RV_CFLAGS := -march=$(RV_MARCH) -mabi=$(RV_MABI) -mcmodel=medany -ffreestanding 
 RV_LDFLAGS := -nostdlib -nostartfiles -Wl,--build-id=none
 OUT ?= build
 TINYUSB_SRCS := third_party/tinyusb/src/tusb.c third_party/tinyusb/src/class/cdc/cdc_device.c third_party/tinyusb/src/portable/synopsys/dwc2/dcd_dwc2.c
-COMMON_SRCS := shared/uart.c shared/timer.c shared/mailbox.c shared/cache.c shared/c906_cache_ops.c shared/memory.c shared/shared_state.c shared/usb_serial.c shared/usb_descriptors.c shared/usb_dwc2_board.c shared/worker_release.c shared/worker_reset_sg200x.c shared/image.c shared/platform.c shared/trap.c shared/trap_entry.S shared/riscv_identity.c shared/riscv_csrs.S $(TINYUSB_SRCS)
+COMMON_SRCS := shared/uart.c shared/timer.c shared/mailbox.c shared/cache.c shared/c906_cache_ops.c shared/memory.c shared/shared_state.c shared/usb_serial.c shared/usb_descriptors.c shared/usb_dwc2_board.c shared/worker_release.c shared/worker_reset_sg200x.c shared/image.c shared/platform.c shared/trap.c shared/trap_entry.S shared/trap_entry_supervisor.S shared/riscv_identity.c shared/riscv_csrs.S $(TINYUSB_SRCS)
 HEADERS := $(shell find include third_party/tinyusb/src -name '*.h' -print)
 BOOT_SRCS := bootloader/start.S bootloader/main.c $(COMMON_SRCS)
 KERNEL_SRCS := kernel/start.S kernel/main.c $(COMMON_SRCS)
@@ -54,7 +58,7 @@ $(OUT)/mars_mcu_fw.bin: watch8051/watchdog.c watch8051/Makefile | $(OUT)
 	$(MAKE) -C watch8051 OUT=../$(OUT) SDCC=$(SDCC) PACKIHX=$(PACKIHX)
 
 package: $(OUT)/bootloader.bin $(OUT)/kernel.bin $(OUT)/worker.bin $(OUT)/mars_mcu_fw.bin
-	$(PYTHON) tools/package_images.py --bootloader $(OUT)/bootloader.bin --kernel $(OUT)/kernel.bin --worker $(OUT)/worker.bin --mcu $(OUT)/mars_mcu_fw.bin --outdir $(OUT)/package
+	$(PYTHON) tools/package_images.py --bootloader $(OUT)/bootloader.bin --kernel $(OUT)/kernel.bin --worker $(OUT)/worker.bin --mcu $(OUT)/mars_mcu_fw.bin --kraken-header include/kraken.h --outdir $(OUT)/package
 
 clean:
 	rm -rf $(OUT)

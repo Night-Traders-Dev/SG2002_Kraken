@@ -48,6 +48,16 @@ Board assumptions for this tree:
 - `BUILD_TARGET=licheerv_nano_w_riscv` for a Nano W FAT card containing
   `fip.bin` and `boot.sd`.
 
+The Nano W packaging path now follows the same rootless SD image shape used by
+Sipeed's release flow:
+
+- partition 1 is a bootable `16 MiB` FAT32 volume at sector `1`
+- partition 2 is an ext4 placeholder partition that preserves the normal
+  two-partition SD layout
+- the boot partition carries `fip.bin`, `boot.sd`, the Kraken payloads, and the
+  usual vendor marker files such as `usb.dev`, `usb.ncm`, `usb.rndis`,
+  `wifi.sta`, `gt9xx`, and `ver`
+
 ## Design intent
 
 This is an **AMP platform layout**:
@@ -58,6 +68,15 @@ This is an **AMP platform layout**:
 
 The current code provides the control skeleton, shared-memory ABI, staged boot flow,
 worker release path, watchdog hooks, and USB console subsystem contract.
+
+The bare-metal DWC2 USB scaffold is now disabled by default. That keeps the
+status and platform-capability reports honest until EP0 handling and endpoint
+scheduling are implemented. The current CDC ACM experiment also avoids one class
+of reconnect loop by refusing to queue USB console output unless the host has
+opened the port and by dropping stale TX data when DTR deasserts. If you want
+to keep experimenting with the USB scaffold, build with:
+
+`make EXTRA_CFLAGS='-DKRAKEN_ENABLE_USB_DWC2_SCAFFOLD=1'`
 
 If you enable `WORKER_STAGING_ADDR`, the package now also emits `worker_staged.bin`,
 which wraps the raw worker payload with a small footer carrying size and CRC32 so the
@@ -74,6 +93,26 @@ T-Head cache-management instructions used by the C906 core.
 The shared control page now also carries a small fault log ring so the bootloader,
 kernel, and worker can leave bring-up breadcrumbs that you can inspect with the
 `faults` console command.
+
+The bring-up path now also mirrors stage, trace, and fault events into a
+separate persistent ring in reserved DDR. That ring is meant for reset-loop
+debugging: it survives warm resets long enough for the next boot to snapshot
+the previous run, and you can inspect it with the kernel `persist` command or
+clear it with `persist-clear`. It is not an SD-backed log and it does not
+survive a full power loss.
+
+Because the Nano W bring-up path can still reset before a console is usable,
+the bootloader now also replays a compact summary of the previous boot on the
+user LED right after the initial single bootloader blink:
+
+- `3` pulses: diagnostic marker
+- `N` pulses: previous stage plus one
+- `N` pulses: previous source tag plus one
+- `N` pulses: low nibble of the previous trace/fault code plus one
+
+The supervisor loop also now emits coarse heartbeat trace records so the
+persistent log can show whether the kernel stayed alive for a while before
+falling back into the reset loop.
 
 The RISC-V path now also installs a machine-mode trap vector in all three C906
 images. Bootloader, kernel, and worker exceptions are printed on UART and latched
@@ -101,9 +140,18 @@ runtime failures.
 
 For the Nano W ROM-boot path, `src/build.sh` now generates a `boot.sd` FIT
 payload that uses vendor U-Boot's normal `fatload ... boot.sd ; bootm ...`
-flow. That FIT preloads `kernel.bin`, `worker.bin`, and `mars_mcu_fw.bin` into
-their fixed DDR addresses and then jumps directly to `bootloader.bin`. You must
-still supply a vendor-built `fip.bin` for the card to be ROM-bootable.
+flow. The FIT now boots `kernel.bin` directly as the primary payload, carries
+the vendor `sg2002_licheervnano_sd` DTB, and preloads `worker.bin` plus
+`mars_mcu_fw.bin` through FIT `loadables`. You must still supply a
+vendor-built `fip.bin` for the card to be ROM-bootable.
+
+For bring-up without UART, the Nano W user LED now mirrors the major boot
+milestones:
+
+- one blink when `bootloader.bin` starts;
+- two blinks when `kernel.bin` starts;
+- a slow heartbeat while the kernel supervisor loop is alive;
+- continuous blinking if bootloader or kernel panics.
 
 ## Recent USB work
 

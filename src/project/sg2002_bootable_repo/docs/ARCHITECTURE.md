@@ -54,6 +54,6 @@ The repo includes a stable USB console contract now:
 - TX/RX rings in shared memory
 - `usb_serial_*()` API for the bootloader/kernel/worker
 - Linux-assisted ACM gadget helper scripts in the deployment bundle
+- a bare-metal CDC ACM path that only queues TX data while the host is connected and flushes stale TX bytes when DTR drops
 
-The native bare-metal UDC backend is intentionally left isolated so the board-
-specific endpoint engine can be added later without changing the kernel/worker ABI.
+The native bare-metal UDC backend is intentionally left isolated so the board-specific endpoint engine can be added later without changing the kernel/worker ABI. EP0 handling, endpoint scheduling, and SG2002-specific interrupt routing are still unfinished.

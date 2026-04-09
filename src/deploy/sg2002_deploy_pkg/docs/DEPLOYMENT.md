@@ -26,4 +26,4 @@ You still need to provide:
 - confirmation that the board remains strapped for C906 major-core boot instead of A53 boot;
 - clearing the shared control page at `0x80170000` before first boot;
 - any board-specific secondary-core reset deassert beyond the public top-misc enable bit;
-- an eventual native bare-metal USB device backend for the board's USB OTG Type-C port.
+- an eventual native bare-metal USB device backend for the board's USB OTG Type-C port with full EP0, endpoint scheduling, and SG2002-specific interrupt wiring.

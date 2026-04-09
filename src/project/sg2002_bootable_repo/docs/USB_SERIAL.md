@@ -25,6 +25,7 @@ This is **not yet a full upstream TinyUSB import**. It is a compile-clean scaffo
 - a real SG2002 DWC2 base-address integration point
 - a CDC ACM console API boundary in the kernel
 - a place to add EP0 control handling, descriptor responses, endpoint scheduling, and PLIC interrupt routing
+- a small amount of reconnect hygiene in the CDC ACM path so stale TX data is not replayed after the host closes and reopens the port
 
 ## What still needs to be finished
 
@@ -36,4 +37,20 @@ This is **not yet a full upstream TinyUSB import**. It is a compile-clean scaffo
 
 ## Build impact
 
-The project Makefile now compiles the TinyUSB-shaped scaffold sources directly, so the repo builds without requiring an external TinyUSB checkout.
+The project Makefile now compiles the TinyUSB-shaped scaffold sources directly,
+so the repo builds without requiring an external TinyUSB checkout.
+
+The scaffold is disabled by default because the current DWC2 backend does not
+yet implement EP0 handling or endpoint scheduling. Enable it only when you are
+actively experimenting with the USB bring-up path:
+
+`make EXTRA_CFLAGS='-DKRAKEN_ENABLE_USB_DWC2_SCAFFOLD=1'`
+
+## Current CDC ACM behavior
+
+The current experimental USB console path now has two defensive behaviors:
+
+- `usb_serial_write()` only queues bytes when TinyUSB reports the CDC ACM interface as connected
+- `tud_cdc_line_state_cb()` flushes queued TX bytes and returns the console state to `USB_SERIAL_READY` when the host drops DTR
+
+These changes improve host reconnect behavior, but they do **not** make the USB path production-ready. Full EP0 handling, endpoint scheduling, and SG2002-specific interrupt/controller validation are still required.

@@ -22,6 +22,7 @@ def parse_args():
     parser.add_argument("--mkimage", default="mkimage")
     parser.add_argument("--package-dir", required=True)
     parser.add_argument("--kraken-header", required=True)
+    parser.add_argument("--dtb", required=True)
     parser.add_argument("--out", required=True)
     parser.add_argument("--its-out")
     parser.add_argument(
@@ -58,9 +59,8 @@ def fit_path_string(path):
     return str(path.resolve()).replace("\\", "\\\\").replace('"', '\\"')
 
 
-def render_its(package_dir, consts, configs):
+def render_its(package_dir, dtb_path, consts, configs):
     files = {
-        "bootloader": package_dir / "bootloader.bin",
         "kernel": package_dir / "kernel.bin",
         "worker": package_dir / "worker.bin",
         "watch8051": package_dir / "mars_mcu_fw.bin",
@@ -77,9 +77,10 @@ def render_its(package_dir, consts, configs):
                 textwrap.dedent(
                     f"""\
                     {config_name} {{
-                        description = "{config_name}";
-                        kernel = "kraken_bootloader";
-                        loadables = "kraken_kernel", "kraken_worker", "kraken_watch8051";
+                        description = "boot Kraken firmware with board {config_name}";
+                        kernel = "kernel-1";
+                        fdt = "fdt-sg2002_licheervnano_sd";
+                        loadables = "kraken_worker", "kraken_watch8051";
                     }};
                     """
                 ).rstrip(),
@@ -93,43 +94,32 @@ def render_its(package_dir, consts, configs):
 
         / {{
             description = "Kraken LicheeRV Nano W boot FIT";
-            #address-cells = <1>;
+            #address-cells = <2>;
 
             images {{
-                kraken_bootloader {{
-                    description = "Kraken bootloader";
-                    data = /incbin/("{fit_path_string(files["bootloader"])}");
-                    type = "firmware";
-                    os = "u-boot";
-                    arch = "riscv";
-                    compression = "none";
-                    load = <0x{consts["BOOTLOADER_LOAD_ADDR"]:08x}>;
-                    entry = <0x{consts["BOOTLOADER_LOAD_ADDR"]:08x}>;
-                    hash {{
-                        algo = "sha256";
-                    }};
-                }};
-
-                kraken_kernel {{
+                kernel-1 {{
                     description = "Kraken kernel";
                     data = /incbin/("{fit_path_string(files["kernel"])}");
-                    type = "loadable";
+                    type = "kernel";
                     arch = "riscv";
+                    os = "linux";
                     compression = "none";
-                    load = <0x{consts["KERNEL_LOAD_ADDR"]:08x}>;
-                    hash {{
-                        algo = "sha256";
+                    load = <0x0 0x{consts["KERNEL_LOAD_ADDR"]:08x}>;
+                    entry = <0x0 0x{consts["KERNEL_LOAD_ADDR"]:08x}>;
+                    hash-1 {{
+                        algo = "crc32";
                     }};
                 }};
 
                 kraken_worker {{
                     description = "Kraken worker";
                     data = /incbin/("{fit_path_string(files["worker"])}");
-                    type = "loadable";
+                    type = "firmware";
                     arch = "riscv";
                     compression = "none";
-                    load = <0x{consts["WORKER_LOAD_ADDR"]:08x}>;
-                    hash {{
+                    load = <0x0 0x{consts["WORKER_LOAD_ADDR"]:08x}>;
+                    entry = <0x0 0x{consts["WORKER_LOAD_ADDR"]:08x}>;
+                    hash-1 {{
                         algo = "sha256";
                     }};
                 }};
@@ -137,11 +127,23 @@ def render_its(package_dir, consts, configs):
                 kraken_watch8051 {{
                     description = "Kraken 8051 watchdog firmware";
                     data = /incbin/("{fit_path_string(files["watch8051"])}");
-                    type = "loadable";
+                    type = "firmware";
                     arch = "or1k";
                     compression = "none";
-                    load = <0x{consts["FW8051_DDR_ADDR"]:08x}>;
-                    hash {{
+                    load = <0x0 0x{consts["FW8051_DDR_ADDR"]:08x}>;
+                    entry = <0x0 0x{consts["FW8051_DDR_ADDR"]:08x}>;
+                    hash-1 {{
+                        algo = "sha256";
+                    }};
+                }};
+
+                fdt-sg2002_licheervnano_sd {{
+                    description = "cvitek device tree - sg2002_licheervnano_sd";
+                    data = /incbin/("{fit_path_string(dtb_path)}");
+                    type = "flat_dt";
+                    arch = "riscv";
+                    compression = "none";
+                    hash-1 {{
                         algo = "sha256";
                     }};
                 }};
@@ -161,13 +163,17 @@ def main():
     args = parse_args()
     package_dir = pathlib.Path(args.package_dir)
     header_path = pathlib.Path(args.kraken_header)
+    dtb_path = pathlib.Path(args.dtb)
     out_path = pathlib.Path(args.out)
     its_path = pathlib.Path(args.its_out) if args.its_out else out_path.with_suffix(
         out_path.suffix + ".its"
     )
 
+    if not dtb_path.is_file():
+        die(f"required DTB missing: {dtb_path}")
+
     consts = read_constants(header_path)
-    its_text = render_its(package_dir, consts, args.configs)
+    its_text = render_its(package_dir, dtb_path, consts, args.configs)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     its_path.write_text(its_text, encoding="utf-8")

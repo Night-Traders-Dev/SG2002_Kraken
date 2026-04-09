@@ -32,10 +32,31 @@ static int load_staged_footer(const uint8_t *base, size_t off, size_t max_len,
     return 1;
 }
 
+static int maybe_staged_footer_tail(const uint8_t *base, size_t off, size_t max_len) {
+    uint32_t tail_magic;
+
+    if (off > max_len || (max_len - off) < sizeof(kraken_staged_image_footer_t))
+        return 0;
+
+    sg2002_memcpy(&tail_magic,
+                  base + off + offsetof(kraken_staged_image_footer_t, tail_magic),
+                  sizeof(tail_magic));
+    return tail_magic == KRAKEN_STAGED_IMAGE_TAIL;
+}
+
 int sg2002_image_present(uintptr_t addr) {
+    kraken_staged_image_footer_t footer;
     uint32_t nonzero = 0;
     uint32_t all_ones = 0;
     const volatile uint32_t *p = (const volatile uint32_t *)(uintptr_t)addr;
+
+    if (sg2002_find_staged_image(addr,
+                                 WORKER_IMAGE_MAX_BYTES +
+                                     sizeof(kraken_staged_image_footer_t),
+                                 &footer)) {
+        return 1;
+    }
+
     for (uint32_t i = 0; i < WORKER_IMAGE_PROBE_WORDS; ++i) {
         uint32_t v = p[i];
         if (v != 0u) nonzero++;
@@ -67,8 +88,17 @@ int sg2002_find_staged_image(uintptr_t addr, size_t max_len,
         return 0;
 
     off = max_len - sizeof(kraken_staged_image_footer_t);
+    if (load_staged_footer(base, off, max_len, footer))
+        return 1;
+
+    /*
+     * Some callers provide a search window rather than an exact staged-image
+     * length, so retain a compatibility scan. Filter candidates by tail magic
+     * first to avoid copying a full footer at every byte offset.
+     */
     for (;;) {
-        if (load_staged_footer(base, off, max_len, footer))
+        if (maybe_staged_footer_tail(base, off, max_len) &&
+            load_staged_footer(base, off, max_len, footer))
             return 1;
         if (off == 0)
             break;
@@ -115,12 +145,12 @@ int sg2002_validate_staged_image(uintptr_t addr, size_t max_len,
     return 1;
 }
 
-void sg2002_copy_image(uintptr_t dst, uintptr_t src, size_t max_len, size_t *copied_len) {
+void sg2002_copy_image(uintptr_t dst, uintptr_t src, size_t len, size_t *copied_len) {
     size_t n = 0;
     const uint8_t *s = (const uint8_t *)(uintptr_t)src;
     uint8_t *d = (uint8_t *)(uintptr_t)dst;
 
-    while (n < max_len) {
+    while (n < len) {
         d[n] = s[n];
         ++n;
         if ((n & 63u) == 0u)

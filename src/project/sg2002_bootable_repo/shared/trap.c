@@ -6,8 +6,11 @@ static const char *trap_cause_name(uint64_t mcause) {
     uint64_t code = mcause & ((1ull << 63) - 1ull);
     if ((mcause >> 63) != 0) {
         switch (code) {
+        case 1: return "supervisor software interrupt";
         case 3: return "machine software interrupt";
+        case 5: return "supervisor timer interrupt";
         case 7: return "machine timer interrupt";
+        case 9: return "supervisor external interrupt";
         case 11: return "machine external interrupt";
         default: return "interrupt";
         }
@@ -62,5 +65,5 @@ void kraken_trap_panic(uint64_t mcause, uint64_t mepc,
         ctl->worker_state = CORE_FAULT;
     ctl_set_stage(ctl, STAGE_PANIC);
 
-    for (;;) cpu_relax();
+    sg2002_user_led_panic_loop();
 }

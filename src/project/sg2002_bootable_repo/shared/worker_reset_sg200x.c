@@ -25,7 +25,8 @@ int sg2002_platform_worker_reset_deassert(void) {
 
     delay_cycles(KRAKEN_WORKER_RESET_PULSE_CYCLES);
 
-    if (worker_reset_write_expect((reg & ~mask) | mask, mask) != 0)
+    reg = MMIO32(KRAKEN_WORKER_RESET_REG);
+    if (worker_reset_write_expect(reg | mask, mask) != 0)
         return -1;
 
     return 0;

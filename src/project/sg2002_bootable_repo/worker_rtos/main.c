@@ -36,6 +36,7 @@ void worker_main(void) {
     shared_ctrl_t *ctl = shared_ctrl();
     console_puts("Kraken worker start\n");
     ctl_note_riscv_identity(ctl, RISCV_ID_WORKER);
+    ctl_trace_log(ctl, FAULTSRC_WORKER, TRACE_WORKER_ENTRY, 0, 0);
     ctl->worker_boot_ack = KRAKEN_MAGIC;
     ctl->worker_state = CORE_IDLE;
     ctl->worker_cmd_ack = ctl->kernel_cmd_seq;
@@ -50,15 +51,21 @@ void worker_main(void) {
             delay_cycles(256);
             break;
         case CMD_BOOT:
+            ctl_trace_log(ctl, FAULTSRC_WORKER, TRACE_WORKER_CMD_BOOT,
+                          ctl->worker_arg0, ctl->worker_arg1);
             ctl->worker_state = CORE_IDLE;
             ctl->worker_cmd_ack = ctl->kernel_cmd_seq;
             ctl->worker_cmd = CMD_NONE;
             ctl_flush(ctl);
             break;
         case CMD_RUN_JOB:
+            ctl_trace_log(ctl, FAULTSRC_WORKER, TRACE_WORKER_CMD_RUN_JOB,
+                          ctl->worker_arg0, ctl->worker_arg1);
             run_demo_job(ctl);
             break;
         case CMD_PANIC:
+            ctl_trace_log(ctl, FAULTSRC_WORKER, TRACE_WORKER_CMD_PANIC,
+                          ctl->worker_cmd, ctl->kernel_cmd_seq);
             ctl_fault_log(ctl, FAULTSRC_WORKER, 0xD00D0001u,
                           ctl->worker_cmd, ctl->kernel_cmd_seq);
             ctl->worker_state = CORE_FAULT;
@@ -66,6 +73,8 @@ void worker_main(void) {
             ctl_flush(ctl);
             break;
         case CMD_STOP:
+            ctl_trace_log(ctl, FAULTSRC_WORKER, TRACE_WORKER_CMD_STOP,
+                          ctl->worker_cmd, ctl->kernel_cmd_seq);
             ctl->worker_state = CORE_OFFLINE;
             ctl->worker_cmd_ack = ctl->kernel_cmd_seq;
             ctl_flush(ctl);

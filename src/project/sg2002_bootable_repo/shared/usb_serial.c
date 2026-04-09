@@ -104,6 +104,7 @@ void usb_serial_poll(void) {
 void usb_serial_write(const char *buf, size_t len) {
     shared_ctrl_t *ctl = shared_ctrl();
     if (!ctl->usb_console_enabled) return;
+    if (!tud_cdc_n_connected(0)) return;
     ctl_invalidate(ctl);
     for (size_t i = 0; i < len; ++i) {
         uint32_t head = ctl->usb_tx_head;
@@ -164,9 +165,18 @@ void tud_suspend_cb(bool remote_wakeup_en) {
 void tud_resume_cb(void) {}
 
 void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts) {
+    shared_ctrl_t *ctl = shared_ctrl();
     (void)itf;
     (void)rts;
-    if (dtr) usb_serial_set_state(USB_SERIAL_ACTIVE, 0);
+    if (dtr) {
+        usb_serial_set_state(USB_SERIAL_ACTIVE, 0);
+        return;
+    }
+
+    /* Host released the ACM port. Drop any queued log bytes so a later
+     * reconnect does not dump stale data into a fresh TinyUSB session. */
+    ctl->usb_tx_head = ctl->usb_tx_tail;
+    usb_serial_set_state(USB_SERIAL_READY, 0);
 }
 
 void tud_cdc_rx_cb(uint8_t itf) {

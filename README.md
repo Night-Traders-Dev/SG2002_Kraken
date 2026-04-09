@@ -20,8 +20,11 @@ and supervises the 8051 watchdog core.
 - optional manager-side worker staging now uses a footer with payload size and
   CRC32 validation instead of a blind fixed-length copy.
 - a USB serial subsystem and Linux-assisted CDC ACM helper flow have been added.
+- the bare-metal DWC2 USB scaffold is now opt-in until EP0 and endpoint support land, and the CDC ACM console path now drops stale TX data on host disconnect to avoid reconnect loops.
 - the SD builder now has a Nano W RISC-V ROM-boot mode that emits a `boot.sd`
   FIT image and copies a supplied vendor `fip.bin` into the FAT partition.
+- the Nano W user LED now provides bare-metal proof-of-life and panic patterns
+  so hardware bring-up no longer depends entirely on UART or USB.
 
 ## Build modes
 
@@ -33,6 +36,32 @@ and supervises the 8051 watchdog core.
   This mode requires `LICHEERV_NANO_FIP_BIN=/path/to/fip.bin` so the card
   contains both `fip.bin` and a `boot.sd` FIT that preloads the Kraken images
   into DDR before jumping to `bootloader.bin`.
+
+The Nano W ROM-boot path now mirrors Sipeed's rootless SD image layout more
+closely:
+
+- a `16 MiB` bootable FAT32 partition starting at sector `1`
+- a second Linux/ext4 partition filling the rest of the image
+- vendor marker files such as `usb.dev`, `usb.ncm`, `usb.rndis`, `wifi.sta`,
+  `gt9xx`, and `ver`
+
+`src/build.sh` now assembles those images rootlessly with `mtools` and
+filesystem images, so it no longer needs loop devices or sudo just to package
+the SD card image.
+
+The TinyUSB-shaped bare-metal USB path is still scaffold-only. It now stays
+disabled by default so the build does not advertise a working USB console before
+EP0 handling and endpoint scheduling exist. Re-enable it only for experiments:
+
+- `make EXTRA_CFLAGS='-DKRAKEN_ENABLE_USB_DWC2_SCAFFOLD=1'`
+
+For Nano W board bring-up, the current bare-metal images also drive the onboard
+user LED:
+
+- one blink: bootloader entry
+- two blinks: kernel entry
+- slow heartbeat: kernel supervisor loop is running
+- continuous blink: bootloader or kernel panic
 
 Examples:
 
