@@ -54,6 +54,8 @@ static void send_worker_cmd(shared_ctrl_t *ctl, uint32_t cmd, uint32_t arg0, uin
 }
 
 static void boot_worker(shared_ctrl_t *ctl) {
+    int release_status;
+
     ctl_set_stage(ctl, STAGE_WORKER_PREP);
     maybe_stage_worker(ctl);
     if (!sg2002_image_present(WORKER_LOAD_ADDR))
@@ -66,7 +68,17 @@ static void boot_worker(shared_ctrl_t *ctl) {
     mailbox_send_worker(CMD_BOOT, (uint32_t)WORKER_LOAD_ADDR);
     ctl_set_stage(ctl, STAGE_WORKER_RELEASE);
     console_puts("[kernel] release worker core\n");
-    (void)sg2002_release_worker_core(WORKER_LOAD_ADDR);
+    release_status = sg2002_release_worker_core(WORKER_LOAD_ADDR);
+    if (release_status != SG2002_WORKER_RELEASE_OK) {
+        ctl_set_platform_error(ctl, PLATERR_WORKER_RELEASE_FAILED);
+        ctl_fault_log(ctl, FAULTSRC_KERNEL, 0xC0DE0005u,
+                      (uint32_t)release_status, (uint32_t)WORKER_LOAD_ADDR);
+        console_puts("[kernel] worker release failed code=0x");
+        console_puthex((uint32_t)release_status);
+        console_puts("\n");
+        kernel_panic(ctl, 0xC0DE0005u, SYSF_WORKER_RELEASE_FAIL);
+    }
+    ctl_clear_platform_error(ctl, PLATERR_WORKER_RELEASE_FAILED);
 }
 
 static void wait_for_worker_ack(shared_ctrl_t *ctl) {

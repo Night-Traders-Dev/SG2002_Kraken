@@ -77,6 +77,11 @@ The shared control page now also records `misa`, `mvendorid`, `marchid`, `mimpid
 and `mhartid` for the bootloader, kernel, and worker images. Use the kernel `cpu`
 command to confirm which RISC-V harts and ISA profile the Nano W actually booted.
 
+The worker release path now also verifies that the secondary C906 boot address
+registers and enable bit actually latch before it starts waiting for a boot ACK.
+That turns "never came online" into a concrete release failure when the register
+programming itself does not stick.
+
 The `status` command now also reports a platform capability bitmask and platform
 error bitmask so Nano W bring-up can distinguish missing optional hooks from
 runtime failures.

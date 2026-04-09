@@ -113,6 +113,7 @@ enum system_flags {
     SYSF_WORKER_RESTARTING    = 1u << 5,
     SYSF_USB_FAULT            = 1u << 6,
     SYSF_RISCV_TRAP           = 1u << 7,
+    SYSF_WORKER_RELEASE_FAIL  = 1u << 8,
     SYSF_WATCHDOG_TIMEOUT     = 1u << 31,
 };
 
@@ -141,6 +142,15 @@ enum kraken_platform_errors {
     PLATERR_USB_INIT_FAILED        = 1u << 1,
     PLATERR_WORKER_ACK_TIMEOUT     = 1u << 2,
     PLATERR_WORKER_STALE           = 1u << 3,
+    PLATERR_WORKER_RELEASE_FAILED  = 1u << 4,
+};
+
+enum sg2002_worker_release_status {
+    SG2002_WORKER_RELEASE_OK = 0,
+    SG2002_WORKER_RELEASE_BOOTADDR_LO_MISMATCH = 1,
+    SG2002_WORKER_RELEASE_BOOTADDR_HI_MISMATCH = 2,
+    SG2002_WORKER_RELEASE_ENABLE_LATCH_FAILED  = 3,
+    SG2002_WORKER_RELEASE_RESET_HOOK_FAILED    = 4,
 };
 
 enum kraken_image_kind {
