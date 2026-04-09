@@ -15,7 +15,7 @@
 
 static const uint8_t s_desc_device[] = {
     18, USB_DESC_DEVICE,
-    0x00, 0x02,
+    0x10, 0x02,
     USB_CLASS_MISC, USB_SUBCLASS_COMMON, USB_PROTOCOL_IAD, 64,
     0xB1, 0x30,
     0x03, 0x10,
