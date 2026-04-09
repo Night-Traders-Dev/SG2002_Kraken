@@ -108,6 +108,10 @@ $SUDO cp -f \
   "$UBOOT_DIR/boot_sg2002_full.scr" \
   "$MOUNT_DIR/"
 
+# Many vendor U-Boot flows auto-probe generic script names.
+$SUDO cp -f "$UBOOT_DIR/boot_sg2002_full.scr" "$MOUNT_DIR/boot.scr"
+$SUDO cp -f "$UBOOT_DIR/boot_sg2002_full.scr" "$MOUNT_DIR/boot.scr.uimg"
+
 if [[ -f "$ROOT_DIR/README.md" ]]; then
   $SUDO cp -f "$ROOT_DIR/README.md" "$MOUNT_DIR/README.txt"
 fi
