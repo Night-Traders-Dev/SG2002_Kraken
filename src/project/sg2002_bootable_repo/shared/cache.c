@@ -3,6 +3,7 @@
 #if KRAKEN_ENABLE_PLATFORM_DCACHE_OPS
 extern void sg2002_platform_flush_dcache_line(uintptr_t addr);
 extern void sg2002_platform_inval_dcache_line(uintptr_t addr);
+extern void sg2002_platform_flush_all_caches(void);
 #endif
 
 static uintptr_t line_align_down(uintptr_t v) {
@@ -40,7 +41,11 @@ void inval_dcache_range(uintptr_t start, uintptr_t end) {
 }
 
 void flush_all_caches(void) {
+#if KRAKEN_ENABLE_PLATFORM_DCACHE_OPS
+    sg2002_platform_flush_all_caches();
+#else
     fence_rw();
     fence_i();
     fence_rw();
+#endif
 }

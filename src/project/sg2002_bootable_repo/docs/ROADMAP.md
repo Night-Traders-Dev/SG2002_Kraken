@@ -8,7 +8,7 @@
 - USB console subsystem contract
 
 ## Phase 2 — next hardware work
-- real C906 cache maintenance hooks
+- board validation for the optional C906 cache maintenance backend
 - actual secondary-core reset deassert hook if required by this board
 - real 8051 watchdog/reset register programming
 - loader-side image headers and checksum validation

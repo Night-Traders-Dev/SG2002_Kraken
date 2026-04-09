@@ -56,6 +56,14 @@ If you enable `WORKER_STAGING_ADDR`, the package now also emits `worker_staged.b
 which wraps the raw worker payload with a small footer carrying size and CRC32 so the
 kernel can validate and copy it safely.
 
+For the RISC-V Nano W path, you can also enable the optional XuanTie C906 cache
+maintenance backend at build time with:
+
+`make EXTRA_CFLAGS='-DKRAKEN_ENABLE_PLATFORM_DCACHE_OPS=1'`
+
+That switches the shared cache helpers from fence-only placeholders to the
+T-Head cache-management instructions used by the C906 core.
+
 
 ## Recent USB work
 
