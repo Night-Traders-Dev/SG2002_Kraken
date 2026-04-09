@@ -53,6 +53,24 @@ void ctl_fault_log(shared_ctrl_t *ctl, uint32_t tag, uint32_t code,
     ctl_flush(ctl);
 }
 
+void ctl_note_trap(shared_ctrl_t *ctl, uint32_t source_tag,
+                   uint64_t mcause, uint64_t mepc,
+                   uint64_t mtval, uint64_t mstatus) {
+    uint32_t packed_mcause = (uint32_t)(mcause & 0x7fffffffu);
+
+    if ((mcause >> 63) != 0)
+        packed_mcause |= 0x80000000u;
+
+    ctl->trap_count++;
+    ctl->trap_last_source = source_tag;
+    ctl->trap_last_cause = packed_mcause;
+    ctl->trap_last_epc = (uint32_t)mepc;
+    ctl->trap_last_tval = (uint32_t)mtval;
+    ctl->trap_last_status = (uint32_t)mstatus;
+    ctl_fault_log(ctl, source_tag, packed_mcause,
+                  (uint32_t)mepc, (uint32_t)mtval);
+}
+
 void ctl_set_platform_error(shared_ctrl_t *ctl, uint32_t error_mask) {
     ctl->platform_errors |= error_mask;
     ctl_flush(ctl);

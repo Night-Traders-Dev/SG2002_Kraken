@@ -1,5 +1,13 @@
 #include "kraken.h"
 
+uint32_t kraken_trap_source_tag(void) {
+    return FAULTSRC_WORKER;
+}
+
+const char *kraken_trap_source_name(void) {
+    return "worker";
+}
+
 static void run_demo_job(shared_ctrl_t *ctl) {
     ctl->worker_state = CORE_RUNNING;
     ctl_flush(ctl);

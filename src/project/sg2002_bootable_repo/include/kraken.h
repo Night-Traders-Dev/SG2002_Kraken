@@ -43,7 +43,7 @@
 #endif
 
 #define KRAKEN_MAGIC                  0x4B52414Bu
-#define KRAKEN_VERSION                4u
+#define KRAKEN_VERSION                5u
 #define KRAKEN_STAGED_IMAGE_MAGIC     0x4B535447u
 #define KRAKEN_STAGED_IMAGE_TAIL      0x4B454E44u
 #define KRAKEN_STAGED_IMAGE_VERSION   1u
@@ -112,6 +112,7 @@ enum system_flags {
     SYSF_WORKER_STALE         = 1u << 4,
     SYSF_WORKER_RESTARTING    = 1u << 5,
     SYSF_USB_FAULT            = 1u << 6,
+    SYSF_RISCV_TRAP           = 1u << 7,
     SYSF_WATCHDOG_TIMEOUT     = 1u << 31,
 };
 
@@ -130,6 +131,7 @@ enum kraken_platform_caps {
     PLATCAP_USB_DWC2_SCAFFOLD = 1u << 4,
     PLATCAP_FAULT_LOG         = 1u << 5,
     PLATCAP_WORKER_STAGING    = 1u << 6,
+    PLATCAP_RISCV_TRAPS       = 1u << 7,
 };
 
 enum kraken_platform_errors {
@@ -207,7 +209,14 @@ typedef struct {
     volatile uint32_t fault_last_code;
     volatile uint32_t fault_last_arg0;
     volatile uint32_t fault_last_arg1;
+    volatile uint32_t trap_count;
+    volatile uint32_t trap_last_source;
+    volatile uint32_t trap_last_cause;
+    volatile uint32_t trap_last_epc;
+    volatile uint32_t trap_last_tval;
+    volatile uint32_t trap_last_status;
     volatile uint32_t reserved0;
+    volatile uint32_t reserved1;
     volatile kraken_fault_record_t fault_log[KRAKEN_FAULT_LOG_SIZE];
     volatile uint8_t usb_rx_ring[USB_SERIAL_RING_SIZE];
     volatile uint8_t usb_tx_ring[USB_SERIAL_RING_SIZE];
@@ -258,6 +267,9 @@ void ctl_set_stage(shared_ctrl_t *ctl, uint32_t stage);
 uint32_t ctl_next_cmd_seq(shared_ctrl_t *ctl);
 void ctl_fault_log(shared_ctrl_t *ctl, uint32_t tag, uint32_t code,
                    uint32_t arg0, uint32_t arg1);
+void ctl_note_trap(shared_ctrl_t *ctl, uint32_t source_tag,
+                   uint64_t mcause, uint64_t mepc,
+                   uint64_t mtval, uint64_t mstatus);
 void ctl_set_platform_error(shared_ctrl_t *ctl, uint32_t error_mask);
 void ctl_clear_platform_error(shared_ctrl_t *ctl, uint32_t error_mask);
 
@@ -290,5 +302,10 @@ void sg2002_copy_image(uintptr_t dst, uintptr_t src, size_t max_len, size_t *cop
 int sg2002_release_worker_core(uintptr_t entry_addr);
 void sg2002_boot_8051(uintptr_t entry_addr);
 void kraken_jump_to(uintptr_t entry_addr) __attribute__((noreturn));
+void kraken_trap_panic(uint64_t mcause, uint64_t mepc,
+                       uint64_t mtval, uint64_t mstatus)
+    __attribute__((noreturn));
+uint32_t kraken_trap_source_tag(void);
+const char *kraken_trap_source_name(void);
 
 #endif

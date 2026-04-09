@@ -1,5 +1,13 @@
 #include "kraken.h"
 
+uint32_t kraken_trap_source_tag(void) {
+    return FAULTSRC_BOOTLOADER;
+}
+
+const char *kraken_trap_source_name(void) {
+    return "boot";
+}
+
 static void boot_panic(shared_ctrl_t *ctl, uint32_t reason, uint32_t flags) {
     ctl_fault_log(ctl, FAULTSRC_BOOTLOADER, reason, flags, ctl->system_stage);
     ctl->reset_reason = reason;

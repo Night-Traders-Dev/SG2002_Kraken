@@ -68,6 +68,11 @@ The shared control page now also carries a small fault log ring so the bootloade
 kernel, and worker can leave bring-up breadcrumbs that you can inspect with the
 `faults` console command.
 
+The RISC-V path now also installs a machine-mode trap vector in all three C906
+images. Bootloader, kernel, and worker exceptions are printed on UART and latched
+into the shared control page so the kernel `trap` command can show the last worker
+trap cause, EPC, trap value, and status snapshot.
+
 The `status` command now also reports a platform capability bitmask and platform
 error bitmask so Nano W bring-up can distinguish missing optional hooks from
 runtime failures.

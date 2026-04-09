@@ -13,6 +13,10 @@
 - real 8051 watchdog/reset register programming
 - loader-side image headers and checksum validation
 
+## Recent RISC-V bring-up work
+- machine-mode trap vector installation for bootloader, kernel, and worker
+- shared-memory trap telemetry for cause, EPC, trap value, and status snapshots
+
 ## Phase 3 — kernel growth
 - timer interrupts instead of pure spin delays
 - scheduler and task model on the main core

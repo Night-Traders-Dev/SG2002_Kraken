@@ -4,6 +4,8 @@ CMakeFiles
 CMakeScripts
 Testing
 Makefile
+!src/project/sg2002_bootable_repo/Makefile
+!src/project/sg2002_bootable_repo/watch8051/Makefile
 cmake_install.cmake
 install_manifest.txt
 compile_commands.json

@@ -1,5 +1,13 @@
 #include "kraken.h"
 
+uint32_t kraken_trap_source_tag(void) {
+    return FAULTSRC_KERNEL;
+}
+
+const char *kraken_trap_source_name(void) {
+    return "kernel";
+}
+
 static void kernel_panic(shared_ctrl_t *ctl, uint32_t reason, uint32_t flags) {
     ctl_fault_log(ctl, FAULTSRC_KERNEL, reason, flags, ctl->system_stage);
     ctl->reset_reason = reason;
@@ -102,10 +110,31 @@ static void print_status(shared_ctrl_t *ctl) {
     console_puthex(ctl->worker_restart_count);
     console_puts(" faults=");
     console_puthex(ctl->fault_log_count);
+    console_puts(" traps=");
+    console_puthex(ctl->trap_count);
     console_puts(" caps=");
     console_puthex(ctl->platform_caps);
     console_puts(" perr=");
     console_puthex(ctl->platform_errors);
+    console_puts("\n");
+}
+
+static void print_trap(shared_ctrl_t *ctl) {
+    if (ctl->trap_count == 0) {
+        console_puts("[trap] none\n");
+        return;
+    }
+
+    console_puts("[trap] src=");
+    console_puthex(ctl->trap_last_source);
+    console_puts(" cause=");
+    console_puthex(ctl->trap_last_cause);
+    console_puts(" epc=");
+    console_puthex(ctl->trap_last_epc);
+    console_puts(" tval=");
+    console_puthex(ctl->trap_last_tval);
+    console_puts(" status=");
+    console_puthex(ctl->trap_last_status);
     console_puts("\n");
 }
 
@@ -146,6 +175,8 @@ static void handle_console(shared_ctrl_t *ctl) {
             line[line_len] = '\0';
             if (sg2002_memcmp(line, "status", 7) == 0) {
                 print_status(ctl);
+            } else if (sg2002_memcmp(line, "trap", 5) == 0) {
+                print_trap(ctl);
             } else if (sg2002_memcmp(line, "faults", 7) == 0) {
                 print_faults(ctl);
             } else if (sg2002_memcmp(line, "run", 4) == 0) {
@@ -158,7 +189,7 @@ static void handle_console(shared_ctrl_t *ctl) {
                 console_puts("[kernel] stop worker\n");
                 send_worker_cmd(ctl, CMD_STOP, 0, 0);
             } else if (line_len != 0) {
-                console_puts("[kernel] commands: status faults run panic stop\n");
+                console_puts("[kernel] commands: status trap faults run panic stop\n");
             }
             line_len = 0;
             continue;
