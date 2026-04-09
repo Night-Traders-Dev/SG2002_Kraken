@@ -3,6 +3,12 @@
 This tarball collects a patched SG2002 bring-up tree, deployment helpers, and
 U-Boot scripts.
 
+Target board: Sipeed LicheeRV Nano W.
+
+This repo assumes the board stays in its C906 (RISC-V) major-core boot mode so
+the main Kraken payload runs on the primary C906, releases the secondary C906,
+and supervises the 8051 watchdog core.
+
 ## Main improvements in this revision
 
 - worker-core release flow now targets the public top-misc syscon model instead

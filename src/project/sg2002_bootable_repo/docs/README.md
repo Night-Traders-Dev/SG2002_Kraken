@@ -2,6 +2,15 @@
 
 This tree is now organized around the platform you described:
 
+Target board: Sipeed LicheeRV Nano W.
+
+Board assumptions for this tree:
+
+- the SG2002 major core is left in C906 boot mode rather than A53 mode;
+- the secondary C906 is released by the kernel after DDR staging;
+- USB bring-up is aimed at the board's single USB2.0 OTG Type-C path;
+- the W suffix only changes onboard wireless peripherals, not the core boot flow.
+
 - `bootloader/` — primary C906 stage-2 bootloader
 - `kernel/` — primary C906 kernel / supervisor
 - `worker_rtos/` — secondary C906 service firmware

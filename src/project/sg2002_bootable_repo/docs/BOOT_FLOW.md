@@ -1,5 +1,8 @@
 # Staged boot flow
 
+This flow is written for the LicheeRV Nano W with the SG2002 major core left in
+its default C906 boot configuration.
+
 ## DDR layout
 
 - `0x80080000` — `bootloader.bin`

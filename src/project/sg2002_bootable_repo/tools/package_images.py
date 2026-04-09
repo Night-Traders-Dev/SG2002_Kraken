@@ -78,11 +78,17 @@ meta['worker_staged.bin'] = {
 }
 
 manifest = {
+    'target_board': 'Sipeed LicheeRV Nano W',
     'bootloader_load_addr': '0x80080000',
     'kernel_load_addr': '0x80100000',
     'shared_ctrl_addr': '0x80170000',
     'worker_load_addr': '0x80180000',
     'mcu_ddr_addr': '0x83F80000',
+    'board_assumptions': {
+        'major_core_boot_mode': 'C906 (RISC-V)',
+        'usb_port': 'USB2.0 OTG Type-C',
+        'notes': 'the W variant adds onboard wireless peripherals but does not change the SG2002 AMP boot model used by Kraken',
+    },
     'worker_ctrl_method': {
         'syscon_base': '0x03000000',
         'ctrl_reg': '0x03000004',
