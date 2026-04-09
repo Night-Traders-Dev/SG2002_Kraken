@@ -48,6 +48,16 @@ Board assumptions for this tree:
 - `BUILD_TARGET=licheerv_nano_w_riscv` for a Nano W FAT card containing
   `fip.bin` and `boot.sd`.
 
+The Nano W packaging path now follows the same rootless SD image shape used by
+Sipeed's release flow:
+
+- partition 1 is a bootable `16 MiB` FAT32 volume at sector `1`
+- partition 2 is an ext4 placeholder partition that preserves the normal
+  two-partition SD layout
+- the boot partition carries `fip.bin`, `boot.sd`, the Kraken payloads, and the
+  usual vendor marker files such as `usb.dev`, `usb.ncm`, `usb.rndis`,
+  `wifi.sta`, `gt9xx`, and `ver`
+
 ## Design intent
 
 This is an **AMP platform layout**:
@@ -101,8 +111,9 @@ runtime failures.
 
 For the Nano W ROM-boot path, `src/build.sh` now generates a `boot.sd` FIT
 payload that uses vendor U-Boot's normal `fatload ... boot.sd ; bootm ...`
-flow. That FIT preloads `kernel.bin`, `worker.bin`, and `mars_mcu_fw.bin` into
-their fixed DDR addresses and then jumps directly to `bootloader.bin`. You must
+flow. The FIT now exposes `bootloader.bin` through the documented FIT
+`firmware` property, which lets vendor U-Boot load the other Kraken binaries as
+`loadables` before jumping directly to the bootloader entry point. You must
 still supply a vendor-built `fip.bin` for the card to be ROM-bootable.
 
 ## Recent USB work

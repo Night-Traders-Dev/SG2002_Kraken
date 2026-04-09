@@ -34,6 +34,18 @@ and supervises the 8051 watchdog core.
   contains both `fip.bin` and a `boot.sd` FIT that preloads the Kraken images
   into DDR before jumping to `bootloader.bin`.
 
+The Nano W ROM-boot path now mirrors Sipeed's rootless SD image layout more
+closely:
+
+- a `16 MiB` bootable FAT32 partition starting at sector `1`
+- a second Linux/ext4 partition filling the rest of the image
+- vendor marker files such as `usb.dev`, `usb.ncm`, `usb.rndis`, `wifi.sta`,
+  `gt9xx`, and `ver`
+
+`src/build.sh` now assembles those images rootlessly with `mtools` and
+filesystem images, so it no longer needs loop devices or sudo just to package
+the SD card image.
+
 Examples:
 
 - `PROJECT_OUT=build-local ./src/build.sh`

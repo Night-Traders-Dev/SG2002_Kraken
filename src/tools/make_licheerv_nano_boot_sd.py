@@ -77,8 +77,8 @@ def render_its(package_dir, consts, configs):
                 textwrap.dedent(
                     f"""\
                     {config_name} {{
-                        description = "{config_name}";
-                        kernel = "kraken_bootloader";
+                        description = "boot Kraken firmware with board {config_name}";
+                        firmware = "kraken_bootloader";
                         loadables = "kraken_kernel", "kraken_worker", "kraken_watch8051";
                     }};
                     """
