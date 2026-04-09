@@ -19,6 +19,7 @@ void ctl_init_defaults(shared_ctrl_t *ctl) {
     ctl->worker_cmd = CMD_NONE;
     ctl->usb_state = USB_SERIAL_OFF;
     ctl->usb_console_enabled = 1;
+    ctl->platform_caps = sg2002_platform_caps();
     ctl->boot_count = 1;
     ctl_flush(ctl);
 }
@@ -49,5 +50,15 @@ void ctl_fault_log(shared_ctrl_t *ctl, uint32_t tag, uint32_t code,
     ctl->fault_log_head = (slot + 1u) & (KRAKEN_FAULT_LOG_SIZE - 1u);
     if (ctl->fault_log_count < KRAKEN_FAULT_LOG_SIZE)
         ctl->fault_log_count++;
+    ctl_flush(ctl);
+}
+
+void ctl_set_platform_error(shared_ctrl_t *ctl, uint32_t error_mask) {
+    ctl->platform_errors |= error_mask;
+    ctl_flush(ctl);
+}
+
+void ctl_clear_platform_error(shared_ctrl_t *ctl, uint32_t error_mask) {
+    ctl->platform_errors &= ~error_mask;
     ctl_flush(ctl);
 }

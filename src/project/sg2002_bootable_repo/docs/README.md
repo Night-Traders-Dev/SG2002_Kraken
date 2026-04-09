@@ -68,6 +68,10 @@ The shared control page now also carries a small fault log ring so the bootloade
 kernel, and worker can leave bring-up breadcrumbs that you can inspect with the
 `faults` console command.
 
+The `status` command now also reports a platform capability bitmask and platform
+error bitmask so Nano W bring-up can distinguish missing optional hooks from
+runtime failures.
+
 
 ## Recent USB work
 

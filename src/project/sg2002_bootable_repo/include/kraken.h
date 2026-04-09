@@ -122,6 +122,24 @@ enum kraken_fault_source {
     FAULTSRC_WATCHDOG   = 4,
 };
 
+enum kraken_platform_caps {
+    PLATCAP_RISCV_C906        = 1u << 0,
+    PLATCAP_WORKER_RELEASE    = 1u << 1,
+    PLATCAP_WORKER_RESET_HOOK = 1u << 2,
+    PLATCAP_DCACHE_OPS        = 1u << 3,
+    PLATCAP_USB_DWC2_SCAFFOLD = 1u << 4,
+    PLATCAP_FAULT_LOG         = 1u << 5,
+    PLATCAP_WORKER_STAGING    = 1u << 6,
+};
+
+enum kraken_platform_errors {
+    PLATERR_NONE                   = 0,
+    PLATERR_WORKER_STAGING_INVALID = 1u << 0,
+    PLATERR_USB_INIT_FAILED        = 1u << 1,
+    PLATERR_WORKER_ACK_TIMEOUT     = 1u << 2,
+    PLATERR_WORKER_STALE           = 1u << 3,
+};
+
 enum kraken_image_kind {
     KRAKEN_IMAGE_BOOTLOADER = 1,
     KRAKEN_IMAGE_KERNEL     = 2,
@@ -240,6 +258,8 @@ void ctl_set_stage(shared_ctrl_t *ctl, uint32_t stage);
 uint32_t ctl_next_cmd_seq(shared_ctrl_t *ctl);
 void ctl_fault_log(shared_ctrl_t *ctl, uint32_t tag, uint32_t code,
                    uint32_t arg0, uint32_t arg1);
+void ctl_set_platform_error(shared_ctrl_t *ctl, uint32_t error_mask);
+void ctl_clear_platform_error(shared_ctrl_t *ctl, uint32_t error_mask);
 
 void usb_serial_init(void);
 void usb_serial_poll(void);
@@ -255,6 +275,7 @@ void console_puthex(uint32_t v);
 void console_puthex64(uint64_t v);
 
 void sg2002_usb_board_init(void);
+uint32_t sg2002_platform_caps(void);
 
 int sg2002_image_present(uintptr_t addr);
 uint32_t sg2002_crc32(const void *buf, size_t len);

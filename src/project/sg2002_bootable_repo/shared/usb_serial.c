@@ -77,11 +77,13 @@ void usb_serial_init(void) {
 
     if (!tusb_init()) {
         ctl->system_flags |= SYSF_USB_FAULT;
+        ctl_set_platform_error(ctl, PLATERR_USB_INIT_FAILED);
         usb_serial_set_state(USB_SERIAL_ERROR, 0x54555342u);
         return;
     }
 
     ctl->usb_state = USB_SERIAL_READY;
+    ctl_clear_platform_error(ctl, PLATERR_USB_INIT_FAILED);
     ctl_flush(ctl);
 }
 

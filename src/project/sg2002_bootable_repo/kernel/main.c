@@ -31,6 +31,7 @@ static void maybe_stage_worker(shared_ctrl_t *ctl) {
         console_puthex((uint32_t)copied);
         console_puts("\n");
     } else if (!sg2002_image_present(WORKER_LOAD_ADDR)) {
+        ctl_set_platform_error(ctl, PLATERR_WORKER_STAGING_INVALID);
         console_puts("[kernel] no valid staged worker image\n");
     }
 #endif
@@ -67,11 +68,13 @@ static void wait_for_worker_ack(shared_ctrl_t *ctl) {
         ctl_invalidate(ctl);
         if (ctl->worker_boot_ack == KRAKEN_MAGIC &&
             (ctl->worker_state == CORE_IDLE || ctl->worker_state == CORE_RUNNING)) {
+            ctl_clear_platform_error(ctl, PLATERR_WORKER_ACK_TIMEOUT);
             console_puts("[kernel] worker online\n");
             return;
         }
         delay_cycles(64);
     }
+    ctl_set_platform_error(ctl, PLATERR_WORKER_ACK_TIMEOUT);
     kernel_panic(ctl, 0xC0DE0002u, SYSF_WORKER_STALE);
 }
 
@@ -99,6 +102,10 @@ static void print_status(shared_ctrl_t *ctl) {
     console_puthex(ctl->worker_restart_count);
     console_puts(" faults=");
     console_puthex(ctl->fault_log_count);
+    console_puts(" caps=");
+    console_puthex(ctl->platform_caps);
+    console_puts(" perr=");
+    console_puthex(ctl->platform_errors);
     console_puts("\n");
 }
 
@@ -201,9 +208,12 @@ void kernel_main(void) {
             stale = 0;
         } else if (stale > 100000u) {
             ctl->system_flags |= SYSF_WORKER_STALE;
+            ctl_set_platform_error(ctl, PLATERR_WORKER_STALE);
             console_puts("[kernel] worker stale\n");
             restart_worker(ctl, 0xC0DE0004u);
             stale = 0;
+        } else if (stale == 0) {
+            ctl_clear_platform_error(ctl, PLATERR_WORKER_STALE);
         }
         delay_cycles(1000);
     }
