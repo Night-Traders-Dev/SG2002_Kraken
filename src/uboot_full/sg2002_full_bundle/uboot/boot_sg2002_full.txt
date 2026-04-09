@@ -1,0 +1,33 @@
+# Kraken SG2002 integrated U-Boot bring-up script
+
+setenv mmcdev 0
+setenv mmcpart 1
+setenv loadfs fatload
+
+setenv bootloader_addr 0x80080000
+setenv kernel_addr     0x80100000
+setenv shared_addr     0x80170000
+setenv worker_addr     0x80180000
+setenv mcu_addr        0x83F80000
+
+setenv bootloader_file bootloader.bin
+setenv kernel_file     kernel.bin
+setenv worker_file     worker.bin
+setenv mcu_file        mars_mcu_fw.bin
+
+setenv dbg_dump 'echo === bootloader ===; md.l ${bootloader_addr} 0x10; echo === kernel ===; md.l ${kernel_addr} 0x10; echo === shared ===; md.l ${shared_addr} 0x20; echo === worker ===; md.l ${worker_addr} 0x10; echo === mcu ===; md.l ${mcu_addr} 0x10'
+setenv dbg_sizes 'echo filesize=${filesize} fileaddr=${fileaddr}'
+
+setenv load_bootloader 'echo Loading bootloader to ${bootloader_addr}...; ${loadfs} mmc ${mmcdev}:${mmcpart} ${bootloader_addr} ${bootloader_file}; run dbg_sizes'
+setenv load_kernel     'echo Loading kernel to ${kernel_addr}...;         ${loadfs} mmc ${mmcdev}:${mmcpart} ${kernel_addr}     ${kernel_file}; run dbg_sizes'
+setenv load_worker     'echo Loading worker to ${worker_addr}...;         ${loadfs} mmc ${mmcdev}:${mmcpart} ${worker_addr}     ${worker_file}; run dbg_sizes'
+setenv load_mcu        'echo Loading 8051 image to ${mcu_addr}...;        ${loadfs} mmc ${mmcdev}:${mmcpart} ${mcu_addr}        ${mcu_file}; run dbg_sizes'
+
+setenv clear_shared 'echo Clearing shared page @ ${shared_addr}...; mw.b ${shared_addr} 0x00 0x1000'
+setenv run_bootloader 'echo Jump to bootloader @ ${bootloader_addr}...; go ${bootloader_addr}'
+
+setenv stage_direct 'mmc dev ${mmcdev}; run load_bootloader; run load_kernel; run load_worker; run load_mcu; run clear_shared'
+setenv boot_full    'run stage_direct; run dbg_dump; run run_bootloader'
+setenv help_kraken  'echo Commands: boot_full dbg_dump stage_direct'
+
+echo Kraken SG2002 integrated script loaded. Run: run help_kraken

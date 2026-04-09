@@ -1,0 +1,29 @@
+# Kraken SG2002 custom U-Boot staging script template
+
+setenv mmcdev 0
+setenv mmcpart 1
+setenv loadfs fatload
+
+setenv bootloader_addr 0x80080000
+setenv kernel_addr     0x80100000
+setenv shared_addr     0x80170000
+setenv worker_addr     0x80180000
+setenv mcu_addr        0x83F80000
+
+setenv bootloader_file bootloader.bin
+setenv kernel_file     kernel.bin
+setenv worker_file     worker.bin
+setenv mcu_file        mars_mcu_fw.bin
+
+setenv load_bootloader 'echo Loading bootloader...; ${loadfs} mmc ${mmcdev}:${mmcpart} ${bootloader_addr} ${bootloader_file}'
+setenv load_kernel     'echo Loading kernel...;     ${loadfs} mmc ${mmcdev}:${mmcpart} ${kernel_addr}     ${kernel_file}'
+setenv load_worker     'echo Loading worker...;     ${loadfs} mmc ${mmcdev}:${mmcpart} ${worker_addr}     ${worker_file}'
+setenv load_mcu        'echo Loading 8051 image...; ${loadfs} mmc ${mmcdev}:${mmcpart} ${mcu_addr}        ${mcu_file}'
+
+setenv clear_shared 'echo Clearing shared page...; mw.b ${shared_addr} 0x00 0x1000'
+setenv run_bootloader 'echo Jumping to bootloader...; go ${bootloader_addr}'
+
+setenv kraken_stage 'mmc dev ${mmcdev}; run load_bootloader; run load_kernel; run load_worker; run load_mcu; run clear_shared'
+setenv kraken_boot  'run kraken_stage; run run_bootloader'
+
+echo Use: run kraken_boot

@@ -1,0 +1,24 @@
+# Custom deployment flow for Kraken SG2002
+
+This package stages the new four-image layout:
+
+- `bootloader.bin`
+- `kernel.bin`
+- `worker.bin`
+- `mars_mcu_fw.bin`
+
+## Included helpers
+
+- `deploy_sg2002_custom.sh`: stage bootloader/kernel/worker/8051 artifacts.
+- `package_for_board.sh`: repack a finished package directory.
+- `linux_enable_usb_acm.sh`: enable USB CDC ACM gadget mode under vendor Linux.
+- `linux_disable_usb_gadget.sh`: tear down the gadget cleanly.
+
+## Manual integration points
+
+You still need to provide:
+
+- your own DDR writer or boot script to place all four binaries;
+- clearing the shared control page at `0x80170000` before first boot;
+- any board-specific secondary-core reset deassert beyond the public top-misc enable bit;
+- an eventual native bare-metal USB device backend.

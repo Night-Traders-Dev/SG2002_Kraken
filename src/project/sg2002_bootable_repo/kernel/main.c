@@ -1,0 +1,164 @@
+#include "kraken.h"
+
+static void kernel_panic(shared_ctrl_t *ctl, uint32_t reason, uint32_t flags) {
+    ctl->reset_reason = reason;
+    ctl->system_flags |= flags;
+    ctl_set_stage(ctl, STAGE_PANIC);
+    console_puts("[kernel] panic\n");
+    for (;;) cpu_relax();
+}
+
+static void maybe_stage_worker(void) {
+#if WORKER_STAGING_ADDR != 0
+    if (!sg2002_image_present(WORKER_LOAD_ADDR) && sg2002_image_present(WORKER_STAGING_ADDR)) {
+        size_t copied = 0;
+        console_puts("[kernel] staging worker image\n");
+        sg2002_copy_image(WORKER_LOAD_ADDR, WORKER_STAGING_ADDR, WORKER_IMAGE_MAX_BYTES, &copied);
+        console_puts("[kernel] worker bytes=0x");
+        console_puthex((uint32_t)copied);
+        console_puts("\n");
+    }
+#endif
+}
+
+static void send_worker_cmd(shared_ctrl_t *ctl, uint32_t cmd, uint32_t arg0, uint32_t arg1) {
+    ctl->worker_cmd = cmd;
+    ctl->worker_arg0 = arg0;
+    ctl->worker_arg1 = arg1;
+    ctl_next_cmd_seq(ctl);
+    ctl_flush(ctl);
+}
+
+static void boot_worker(shared_ctrl_t *ctl) {
+    ctl_set_stage(ctl, STAGE_WORKER_PREP);
+    maybe_stage_worker();
+    if (!sg2002_image_present(WORKER_LOAD_ADDR))
+        kernel_panic(ctl, 0xC0DE0001u, SYSF_WORKER_IMAGE_MISSING);
+
+    ctl->worker_state = CORE_BOOTING;
+    ctl->worker_boot_ack = 0;
+    send_worker_cmd(ctl, CMD_BOOT, (uint32_t)WORKER_LOAD_ADDR, (uint32_t)WORKER_SHARED_TOP);
+
+    mailbox_send_worker(CMD_BOOT, (uint32_t)WORKER_LOAD_ADDR);
+    ctl_set_stage(ctl, STAGE_WORKER_RELEASE);
+    console_puts("[kernel] release worker core\n");
+    (void)sg2002_release_worker_core(WORKER_LOAD_ADDR);
+}
+
+static void wait_for_worker_ack(shared_ctrl_t *ctl) {
+    ctl_set_stage(ctl, STAGE_WORKER_WAIT_ACK);
+    console_puts("[kernel] wait worker ack\n");
+    for (uint32_t spins = 0; spins < 300000u; ++spins) {
+        ctl_invalidate(ctl);
+        if (ctl->worker_boot_ack == KRAKEN_MAGIC &&
+            (ctl->worker_state == CORE_IDLE || ctl->worker_state == CORE_RUNNING)) {
+            console_puts("[kernel] worker online\n");
+            return;
+        }
+        delay_cycles(64);
+    }
+    kernel_panic(ctl, 0xC0DE0002u, SYSF_WORKER_STALE);
+}
+
+static void restart_worker(shared_ctrl_t *ctl, uint32_t reason) {
+    ctl->worker_restart_count++;
+    ctl->reset_reason = reason;
+    ctl->system_flags |= SYSF_WORKER_RESTARTING;
+    ctl_flush(ctl);
+    boot_worker(ctl);
+    wait_for_worker_ack(ctl);
+}
+
+static void print_status(shared_ctrl_t *ctl) {
+    console_puts("[status] stage=");
+    console_puthex(ctl->system_stage);
+    console_puts(" worker=");
+    console_puthex(ctl->worker_state);
+    console_puts(" khb=");
+    console_puthex(ctl->kernel_heartbeat);
+    console_puts(" whb=");
+    console_puthex(ctl->worker_heartbeat);
+    console_puts(" rst=");
+    console_puthex(ctl->worker_restart_count);
+    console_puts("\n");
+}
+
+static void handle_console(shared_ctrl_t *ctl) {
+    static char line[64];
+    static uint32_t line_len = 0;
+    char buf[32];
+    size_t n = usb_serial_read(buf, sizeof(buf));
+    for (size_t i = 0; i < n; ++i) {
+        char c = buf[i];
+        if (c == '\r') continue;
+        if (c == '\n') {
+            line[line_len] = '\0';
+            if (sg2002_memcmp(line, "status", 7) == 0) {
+                print_status(ctl);
+            } else if (sg2002_memcmp(line, "run", 4) == 0) {
+                console_puts("[kernel] queue worker job\n");
+                send_worker_cmd(ctl, CMD_RUN_JOB, 0x1234u, 0);
+            } else if (sg2002_memcmp(line, "panic", 6) == 0) {
+                console_puts("[kernel] inject worker panic\n");
+                send_worker_cmd(ctl, CMD_PANIC, 0, 0);
+            } else if (sg2002_memcmp(line, "stop", 5) == 0) {
+                console_puts("[kernel] stop worker\n");
+                send_worker_cmd(ctl, CMD_STOP, 0, 0);
+            } else if (line_len != 0) {
+                console_puts("[kernel] commands: status run panic stop\n");
+            }
+            line_len = 0;
+            continue;
+        }
+        if (line_len + 1 < sizeof(line)) line[line_len++] = c;
+    }
+}
+
+void kernel_main(void) {
+    shared_ctrl_t *ctl = shared_ctrl();
+    console_puts("Kraken kernel start\n");
+
+    ctl_invalidate(ctl);
+    if (ctl->magic != KRAKEN_MAGIC || ctl->version != KRAKEN_VERSION)
+        ctl_init_defaults(ctl);
+
+    ctl->system_flags &= ~SYSF_BOOTLOADER_ACTIVE;
+    ctl->system_flags |= SYSF_KERNEL_ACTIVE;
+    ctl_set_stage(ctl, STAGE_KERNEL_ENTRY);
+    if (ctl->usb_state == USB_SERIAL_OFF) usb_serial_init();
+
+    boot_worker(ctl);
+    wait_for_worker_ack(ctl);
+    ctl_set_stage(ctl, STAGE_OS_RUNNING);
+    console_puts("[kernel] supervisor loop\n");
+
+    uint32_t stale = 0;
+    uint32_t last_worker_hb = 0;
+    for (;;) {
+        ctl_invalidate(ctl);
+        ctl->kernel_heartbeat++;
+        ctl->kernel_pet_seq++;
+        ctl_flush(ctl);
+        mailbox_send_8051(CMD_PET_8051, ctl->kernel_pet_seq);
+        usb_serial_poll();
+        handle_console(ctl);
+
+        if (ctl->worker_heartbeat == last_worker_hb) stale++;
+        else {
+            last_worker_hb = ctl->worker_heartbeat;
+            stale = 0;
+        }
+
+        if (ctl->worker_state == CORE_FAULT) {
+            console_puts("[kernel] worker fault\n");
+            restart_worker(ctl, 0xC0DE0003u);
+            stale = 0;
+        } else if (stale > 100000u) {
+            ctl->system_flags |= SYSF_WORKER_STALE;
+            console_puts("[kernel] worker stale\n");
+            restart_worker(ctl, 0xC0DE0004u);
+            stale = 0;
+        }
+        delay_cycles(1000);
+    }
+}

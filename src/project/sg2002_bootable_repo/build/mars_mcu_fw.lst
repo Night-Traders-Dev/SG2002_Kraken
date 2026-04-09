@@ -1,0 +1,573 @@
+                                      1 ;--------------------------------------------------------
+                                      2 ; File Created by SDCC : free open source ISO C Compiler
+                                      3 ; Version 4.5.0 #15242 (Linux)
+                                      4 ;--------------------------------------------------------
+                                      5 	.module watchdog
+                                      6 	
+                                      7 	.optsdcc -mmcs51 --model-small
+                                      8 ;--------------------------------------------------------
+                                      9 ; Public variables in this module
+                                     10 ;--------------------------------------------------------
+                                     11 	.globl _main
+                                     12 	.globl _watchdog_pet_count
+                                     13 	.globl _watchdog_last_worker_seq
+                                     14 	.globl _watchdog_last_kernel_seq
+                                     15 	.globl _kernel_pet_seq
+                                     16 	.globl _worker_state
+                                     17 	.globl _worker_heartbeat
+                                     18 	.globl _kernel_heartbeat
+                                     19 	.globl _reset_reason
+                                     20 	.globl _system_flags
+                                     21 	.globl _system_stage
+                                     22 ;--------------------------------------------------------
+                                     23 ; special function registers
+                                     24 ;--------------------------------------------------------
+                                     25 	.area RSEG    (ABS,DATA)
+      000000                         26 	.org 0x0000
+                                     27 ;--------------------------------------------------------
+                                     28 ; special function bits
+                                     29 ;--------------------------------------------------------
+                                     30 	.area RSEG    (ABS,DATA)
+      000000                         31 	.org 0x0000
+                                     32 ;--------------------------------------------------------
+                                     33 ; overlayable register banks
+                                     34 ;--------------------------------------------------------
+                                     35 	.area REG_BANK_0	(REL,OVR,DATA)
+      000000                         36 	.ds 8
+                                     37 ;--------------------------------------------------------
+                                     38 ; internal ram data
+                                     39 ;--------------------------------------------------------
+                                     40 	.area DSEG    (DATA)
+      000000                         41 _main_last_worker_10000_8:
+      000000                         42 	.ds 4
+      000004                         43 _main_kernel_timeout_10000_8:
+      000004                         44 	.ds 2
+      000006                         45 _main_worker_timeout_10000_8:
+      000006                         46 	.ds 2
+                                     47 ;--------------------------------------------------------
+                                     48 ; overlayable items in internal ram
+                                     49 ;--------------------------------------------------------
+                                     50 ;--------------------------------------------------------
+                                     51 ; Stack segment in internal ram
+                                     52 ;--------------------------------------------------------
+                                     53 	.area SSEG
+      000000                         54 __start__stack:
+      000000                         55 	.ds	1
+                                     56 
+                                     57 ;--------------------------------------------------------
+                                     58 ; indirectly addressable internal ram data
+                                     59 ;--------------------------------------------------------
+                                     60 	.area ISEG    (DATA)
+                                     61 ;--------------------------------------------------------
+                                     62 ; absolute internal ram data
+                                     63 ;--------------------------------------------------------
+                                     64 	.area IABS    (ABS,DATA)
+                                     65 	.area IABS    (ABS,DATA)
+                                     66 ;--------------------------------------------------------
+                                     67 ; bit data
+                                     68 ;--------------------------------------------------------
+                                     69 	.area BSEG    (BIT)
+                                     70 ;--------------------------------------------------------
+                                     71 ; paged external ram data
+                                     72 ;--------------------------------------------------------
+                                     73 	.area PSEG    (PAG,XDATA)
+                                     74 ;--------------------------------------------------------
+                                     75 ; uninitialized external ram data
+                                     76 ;--------------------------------------------------------
+                                     77 	.area XSEG    (XDATA)
+                           000008    78 _system_stage	=	0x0008
+                           00000C    79 _system_flags	=	0x000c
+                           000010    80 _reset_reason	=	0x0010
+                           000020    81 _kernel_heartbeat	=	0x0020
+                           000024    82 _worker_heartbeat	=	0x0024
+                           000028    83 _worker_state	=	0x0028
+                           000030    84 _kernel_pet_seq	=	0x0030
+                           000034    85 _watchdog_last_kernel_seq	=	0x0034
+                           000038    86 _watchdog_last_worker_seq	=	0x0038
+                           00003C    87 _watchdog_pet_count	=	0x003c
+                                     88 ;--------------------------------------------------------
+                                     89 ; absolute external ram data
+                                     90 ;--------------------------------------------------------
+                                     91 	.area XABS    (ABS,XDATA)
+                                     92 ;--------------------------------------------------------
+                                     93 ; initialized external ram data
+                                     94 ;--------------------------------------------------------
+                                     95 	.area XISEG   (XDATA)
+                                     96 	.area HOME    (CODE)
+                                     97 	.area GSINIT0 (CODE)
+                                     98 	.area GSINIT1 (CODE)
+                                     99 	.area GSINIT2 (CODE)
+                                    100 	.area GSINIT3 (CODE)
+                                    101 	.area GSINIT4 (CODE)
+                                    102 	.area GSINIT5 (CODE)
+                                    103 	.area GSINIT  (CODE)
+                                    104 	.area GSFINAL (CODE)
+                                    105 	.area CSEG    (CODE)
+                                    106 ;--------------------------------------------------------
+                                    107 ; interrupt vector
+                                    108 ;--------------------------------------------------------
+                                    109 	.area HOME    (CODE)
+      000000                        110 __interrupt_vect:
+      000000 02r00r00         [24]  111 	ljmp	__sdcc_gsinit_startup
+                                    112 ; restartable atomic support routines
+      000003                        113 	.ds	5
+      000008                        114 sdcc_atomic_exchange_rollback_start::
+      000008 00               [12]  115 	nop
+      000009 00               [12]  116 	nop
+      00000A                        117 sdcc_atomic_exchange_pdata_impl:
+      00000A E2               [24]  118 	movx	a, @r0
+      00000B FB               [12]  119 	mov	r3, a
+      00000C EA               [12]  120 	mov	a, r2
+      00000D F2               [24]  121 	movx	@r0, a
+      00000E 80 2C            [24]  122 	sjmp	sdcc_atomic_exchange_exit
+      000010 00               [12]  123 	nop
+      000011 00               [12]  124 	nop
+      000012                        125 sdcc_atomic_exchange_xdata_impl:
+      000012 E0               [24]  126 	movx	a, @dptr
+      000013 FB               [12]  127 	mov	r3, a
+      000014 EA               [12]  128 	mov	a, r2
+      000015 F0               [24]  129 	movx	@dptr, a
+      000016 80 24            [24]  130 	sjmp	sdcc_atomic_exchange_exit
+      000018                        131 sdcc_atomic_compare_exchange_idata_impl:
+      000018 E6               [12]  132 	mov	a, @r0
+      000019 B5 02 02         [24]  133 	cjne	a, ar2, .+#5
+      00001C EB               [12]  134 	mov	a, r3
+      00001D F6               [12]  135 	mov	@r0, a
+      00001E 22               [24]  136 	ret
+      00001F 00               [12]  137 	nop
+      000020                        138 sdcc_atomic_compare_exchange_pdata_impl:
+      000020 E2               [24]  139 	movx	a, @r0
+      000021 B5 02 02         [24]  140 	cjne	a, ar2, .+#5
+      000024 EB               [12]  141 	mov	a, r3
+      000025 F2               [24]  142 	movx	@r0, a
+      000026 22               [24]  143 	ret
+      000027 00               [12]  144 	nop
+      000028                        145 sdcc_atomic_compare_exchange_xdata_impl:
+      000028 E0               [24]  146 	movx	a, @dptr
+      000029 B5 02 02         [24]  147 	cjne	a, ar2, .+#5
+      00002C EB               [12]  148 	mov	a, r3
+      00002D F0               [24]  149 	movx	@dptr, a
+      00002E 22               [24]  150 	ret
+      00002F                        151 sdcc_atomic_exchange_rollback_end::
+                                    152 
+      00002F                        153 sdcc_atomic_exchange_gptr_impl::
+      00002F 30 F6 E0         [24]  154 	jnb	b.6, sdcc_atomic_exchange_xdata_impl
+      000032 A8 82            [24]  155 	mov	r0, dpl
+      000034 20 F5 D3         [24]  156 	jb	b.5, sdcc_atomic_exchange_pdata_impl
+      000037                        157 sdcc_atomic_exchange_idata_impl:
+      000037 EA               [12]  158 	mov	a, r2
+      000038 C6               [12]  159 	xch	a, @r0
+      000039 F5 82            [12]  160 	mov	dpl, a
+      00003B 22               [24]  161 	ret
+      00003C                        162 sdcc_atomic_exchange_exit:
+      00003C 8B 82            [24]  163 	mov	dpl, r3
+      00003E 22               [24]  164 	ret
+      00003F                        165 sdcc_atomic_compare_exchange_gptr_impl::
+      00003F 30 F6 E6         [24]  166 	jnb	b.6, sdcc_atomic_compare_exchange_xdata_impl
+      000042 A8 82            [24]  167 	mov	r0, dpl
+      000044 20 F5 D9         [24]  168 	jb	b.5, sdcc_atomic_compare_exchange_pdata_impl
+      000047 80 CF            [24]  169 	sjmp	sdcc_atomic_compare_exchange_idata_impl
+                                    170 ;--------------------------------------------------------
+                                    171 ; global & static initialisations
+                                    172 ;--------------------------------------------------------
+                                    173 	.area HOME    (CODE)
+                                    174 	.area GSINIT  (CODE)
+                                    175 	.area GSFINAL (CODE)
+                                    176 	.area GSINIT  (CODE)
+                                    177 	.globl __sdcc_gsinit_startup
+                                    178 	.globl __sdcc_program_startup
+                                    179 	.globl __start__stack
+                                    180 	.globl __mcs51_genXINIT
+                                    181 	.globl __mcs51_genXRAMCLEAR
+                                    182 	.globl __mcs51_genRAMCLEAR
+                                    183 	.area GSFINAL (CODE)
+      000000 02r00r49         [24]  184 	ljmp	__sdcc_program_startup
+                                    185 ;--------------------------------------------------------
+                                    186 ; Home
+                                    187 ;--------------------------------------------------------
+                                    188 	.area HOME    (CODE)
+                                    189 	.area HOME    (CODE)
+      000049                        190 __sdcc_program_startup:
+      000049 02r00r4A         [24]  191 	ljmp	_main
+                                    192 ;	return from main will return to caller
+                                    193 ;--------------------------------------------------------
+                                    194 ; code
+                                    195 ;--------------------------------------------------------
+                                    196 	.area CSEG    (CODE)
+                                    197 ;------------------------------------------------------------
+                                    198 ;Allocation info for local variables in function 'pet_hw'
+                                    199 ;------------------------------------------------------------
+                                    200 ;	watchdog.c:18: static void pet_hw(void) {
+                                    201 ;	-----------------------------------------
+                                    202 ;	 function pet_hw
+                                    203 ;	-----------------------------------------
+      000000                        204 _pet_hw:
+                           000007   205 	ar7 = 0x07
+                           000006   206 	ar6 = 0x06
+                           000005   207 	ar5 = 0x05
+                           000004   208 	ar4 = 0x04
+                           000003   209 	ar3 = 0x03
+                           000002   210 	ar2 = 0x02
+                           000001   211 	ar1 = 0x01
+                           000000   212 	ar0 = 0x00
+                                    213 ;	watchdog.c:19: watchdog_pet_count++;
+      000000 90 00 3C         [24]  214 	mov	dptr,#_watchdog_pet_count
+      000003 E0               [24]  215 	movx	a,@dptr
+      000004 FC               [12]  216 	mov	r4,a
+      000005 A3               [24]  217 	inc	dptr
+      000006 E0               [24]  218 	movx	a,@dptr
+      000007 FD               [12]  219 	mov	r5,a
+      000008 A3               [24]  220 	inc	dptr
+      000009 E0               [24]  221 	movx	a,@dptr
+      00000A FE               [12]  222 	mov	r6,a
+      00000B A3               [24]  223 	inc	dptr
+      00000C E0               [24]  224 	movx	a,@dptr
+      00000D FF               [12]  225 	mov	r7,a
+      00000E 90 00 3C         [24]  226 	mov	dptr,#_watchdog_pet_count
+      000011 74 01            [12]  227 	mov	a,#0x01
+      000013 2C               [12]  228 	add	a, r4
+      000014 F0               [24]  229 	movx	@dptr,a
+      000015 E4               [12]  230 	clr	a
+      000016 3D               [12]  231 	addc	a, r5
+      000017 A3               [24]  232 	inc	dptr
+      000018 F0               [24]  233 	movx	@dptr,a
+      000019 E4               [12]  234 	clr	a
+      00001A 3E               [12]  235 	addc	a, r6
+      00001B A3               [24]  236 	inc	dptr
+      00001C F0               [24]  237 	movx	@dptr,a
+      00001D E4               [12]  238 	clr	a
+      00001E 3F               [12]  239 	addc	a, r7
+      00001F A3               [24]  240 	inc	dptr
+      000020 F0               [24]  241 	movx	@dptr,a
+                                    242 ;	watchdog.c:20: }
+      000021 22               [24]  243 	ret
+                                    244 ;------------------------------------------------------------
+                                    245 ;Allocation info for local variables in function 'do_reset'
+                                    246 ;------------------------------------------------------------
+                                    247 ;reason        Allocated to registers r4 r5 r6 r7 
+                                    248 ;------------------------------------------------------------
+                                    249 ;	watchdog.c:22: static void do_reset(uint32_t reason) {
+                                    250 ;	-----------------------------------------
+                                    251 ;	 function do_reset
+                                    252 ;	-----------------------------------------
+      000022                        253 _do_reset:
+      000022 AC 82            [24]  254 	mov	r4,dpl
+      000024 AD 83            [24]  255 	mov	r5,dph
+      000026 AE F0            [24]  256 	mov	r6,b
+      000028 FF               [12]  257 	mov	r7,a
+                                    258 ;	watchdog.c:23: reset_reason = reason;
+      000029 90 00 10         [24]  259 	mov	dptr,#_reset_reason
+      00002C EC               [12]  260 	mov	a,r4
+      00002D F0               [24]  261 	movx	@dptr,a
+      00002E ED               [12]  262 	mov	a,r5
+      00002F A3               [24]  263 	inc	dptr
+      000030 F0               [24]  264 	movx	@dptr,a
+      000031 EE               [12]  265 	mov	a,r6
+      000032 A3               [24]  266 	inc	dptr
+      000033 F0               [24]  267 	movx	@dptr,a
+      000034 EF               [12]  268 	mov	a,r7
+      000035 A3               [24]  269 	inc	dptr
+      000036 F0               [24]  270 	movx	@dptr,a
+                                    271 ;	watchdog.c:24: system_flags |= 0x80000000UL;
+      000037 90 00 0C         [24]  272 	mov	dptr,#_system_flags
+      00003A E0               [24]  273 	movx	a,@dptr
+      00003B A3               [24]  274 	inc	dptr
+      00003C E0               [24]  275 	movx	a,@dptr
+      00003D A3               [24]  276 	inc	dptr
+      00003E E0               [24]  277 	movx	a,@dptr
+      00003F A3               [24]  278 	inc	dptr
+      000040 E0               [24]  279 	movx	a,@dptr
+      000041 43 E0 80         [24]  280 	orl	acc,#0x80
+      000044 F0               [24]  281 	movx	@dptr,a
+      000045                        282 00102$:
+                                    283 ;	watchdog.c:26: pet_hw();
+      000045 12r00r00         [24]  284 	lcall	_pet_hw
+                                    285 ;	watchdog.c:28: }
+      000048 80 FB            [24]  286 	sjmp	00102$
+                                    287 ;------------------------------------------------------------
+                                    288 ;Allocation info for local variables in function 'main'
+                                    289 ;------------------------------------------------------------
+                                    290 ;last_pet      Allocated to registers r4 r5 r6 r7 
+                                    291 ;last_worker   Allocated with name '_main_last_worker_10000_8'
+                                    292 ;kernel_timeout Allocated with name '_main_kernel_timeout_10000_8'
+                                    293 ;worker_timeout Allocated with name '_main_worker_timeout_10000_8'
+                                    294 ;------------------------------------------------------------
+                                    295 ;	watchdog.c:30: void main(void) {
+                                    296 ;	-----------------------------------------
+                                    297 ;	 function main
+                                    298 ;	-----------------------------------------
+      00004A                        299 _main:
+                                    300 ;	watchdog.c:31: uint32_t last_pet = kernel_pet_seq;
+      00004A 90 00 30         [24]  301 	mov	dptr,#_kernel_pet_seq
+      00004D E0               [24]  302 	movx	a,@dptr
+      00004E FC               [12]  303 	mov	r4,a
+      00004F A3               [24]  304 	inc	dptr
+      000050 E0               [24]  305 	movx	a,@dptr
+      000051 FD               [12]  306 	mov	r5,a
+      000052 A3               [24]  307 	inc	dptr
+      000053 E0               [24]  308 	movx	a,@dptr
+      000054 FE               [12]  309 	mov	r6,a
+      000055 A3               [24]  310 	inc	dptr
+      000056 E0               [24]  311 	movx	a,@dptr
+      000057 FF               [12]  312 	mov	r7,a
+                                    313 ;	watchdog.c:32: uint32_t last_worker = worker_heartbeat;
+      000058 90 00 24         [24]  314 	mov	dptr,#_worker_heartbeat
+      00005B E0               [24]  315 	movx	a,@dptr
+      00005C F5*00            [12]  316 	mov	_main_last_worker_10000_8,a
+      00005E A3               [24]  317 	inc	dptr
+      00005F E0               [24]  318 	movx	a,@dptr
+      000060 F5*01            [12]  319 	mov	(_main_last_worker_10000_8 + 1),a
+      000062 A3               [24]  320 	inc	dptr
+      000063 E0               [24]  321 	movx	a,@dptr
+      000064 F5*02            [12]  322 	mov	(_main_last_worker_10000_8 + 2),a
+      000066 A3               [24]  323 	inc	dptr
+      000067 E0               [24]  324 	movx	a,@dptr
+      000068 F5*03            [12]  325 	mov	(_main_last_worker_10000_8 + 3),a
+                                    326 ;	watchdog.c:33: uint16_t kernel_timeout = 0;
+      00006A E4               [12]  327 	clr	a
+      00006B F5*04            [12]  328 	mov	_main_kernel_timeout_10000_8,a
+      00006D F5*05            [12]  329 	mov	(_main_kernel_timeout_10000_8 + 1),a
+                                    330 ;	watchdog.c:34: uint16_t worker_timeout = 0;
+      00006F F5*06            [12]  331 	mov	_main_worker_timeout_10000_8,a
+      000071 F5*07            [12]  332 	mov	(_main_worker_timeout_10000_8 + 1),a
+                                    333 ;	watchdog.c:36: watchdog_last_kernel_seq = last_pet;
+      000073 90 00 34         [24]  334 	mov	dptr,#_watchdog_last_kernel_seq
+      000076 EC               [12]  335 	mov	a,r4
+      000077 F0               [24]  336 	movx	@dptr,a
+      000078 ED               [12]  337 	mov	a,r5
+      000079 A3               [24]  338 	inc	dptr
+      00007A F0               [24]  339 	movx	@dptr,a
+      00007B EE               [12]  340 	mov	a,r6
+      00007C A3               [24]  341 	inc	dptr
+      00007D F0               [24]  342 	movx	@dptr,a
+      00007E EF               [12]  343 	mov	a,r7
+      00007F A3               [24]  344 	inc	dptr
+      000080 F0               [24]  345 	movx	@dptr,a
+                                    346 ;	watchdog.c:37: watchdog_last_worker_seq = last_worker;
+      000081 90 00 38         [24]  347 	mov	dptr,#_watchdog_last_worker_seq
+      000084 E5*00            [12]  348 	mov	a,_main_last_worker_10000_8
+      000086 F0               [24]  349 	movx	@dptr,a
+      000087 E5*01            [12]  350 	mov	a,(_main_last_worker_10000_8 + 1)
+      000089 A3               [24]  351 	inc	dptr
+      00008A F0               [24]  352 	movx	@dptr,a
+      00008B E5*02            [12]  353 	mov	a,(_main_last_worker_10000_8 + 2)
+      00008D A3               [24]  354 	inc	dptr
+      00008E F0               [24]  355 	movx	@dptr,a
+      00008F E5*03            [12]  356 	mov	a,(_main_last_worker_10000_8 + 3)
+      000091 A3               [24]  357 	inc	dptr
+      000092 F0               [24]  358 	movx	@dptr,a
+                                    359 ;	watchdog.c:38: watchdog_pet_count = 0;
+      000093 90 00 3C         [24]  360 	mov	dptr,#_watchdog_pet_count
+      000096 E4               [12]  361 	clr	a
+      000097 F0               [24]  362 	movx	@dptr,a
+      000098 A3               [24]  363 	inc	dptr
+      000099 F0               [24]  364 	movx	@dptr,a
+      00009A A3               [24]  365 	inc	dptr
+      00009B F0               [24]  366 	movx	@dptr,a
+      00009C A3               [24]  367 	inc	dptr
+      00009D F0               [24]  368 	movx	@dptr,a
+                                    369 ;	watchdog.c:40: while (1) {
+      00009E                        370 00113$:
+                                    371 ;	watchdog.c:41: if (kernel_pet_seq != last_pet) {
+      00009E 90 00 30         [24]  372 	mov	dptr,#_kernel_pet_seq
+      0000A1 E0               [24]  373 	movx	a,@dptr
+      0000A2 F8               [12]  374 	mov	r0,a
+      0000A3 A3               [24]  375 	inc	dptr
+      0000A4 E0               [24]  376 	movx	a,@dptr
+      0000A5 F9               [12]  377 	mov	r1,a
+      0000A6 A3               [24]  378 	inc	dptr
+      0000A7 E0               [24]  379 	movx	a,@dptr
+      0000A8 FA               [12]  380 	mov	r2,a
+      0000A9 A3               [24]  381 	inc	dptr
+      0000AA E0               [24]  382 	movx	a,@dptr
+      0000AB FB               [12]  383 	mov	r3,a
+      0000AC E8               [12]  384 	mov	a,r0
+      0000AD B5 04 0E         [24]  385 	cjne	a,ar4,00153$
+      0000B0 E9               [12]  386 	mov	a,r1
+      0000B1 B5 05 0A         [24]  387 	cjne	a,ar5,00153$
+      0000B4 EA               [12]  388 	mov	a,r2
+      0000B5 B5 06 06         [24]  389 	cjne	a,ar6,00153$
+      0000B8 EB               [12]  390 	mov	a,r3
+      0000B9 B5 07 02         [24]  391 	cjne	a,ar7,00153$
+      0000BC 80 36            [24]  392 	sjmp	00104$
+      0000BE                        393 00153$:
+                                    394 ;	watchdog.c:42: last_pet = kernel_pet_seq;
+      0000BE 90 00 30         [24]  395 	mov	dptr,#_kernel_pet_seq
+      0000C1 E0               [24]  396 	movx	a,@dptr
+      0000C2 FC               [12]  397 	mov	r4,a
+      0000C3 A3               [24]  398 	inc	dptr
+      0000C4 E0               [24]  399 	movx	a,@dptr
+      0000C5 FD               [12]  400 	mov	r5,a
+      0000C6 A3               [24]  401 	inc	dptr
+      0000C7 E0               [24]  402 	movx	a,@dptr
+      0000C8 FE               [12]  403 	mov	r6,a
+      0000C9 A3               [24]  404 	inc	dptr
+      0000CA E0               [24]  405 	movx	a,@dptr
+      0000CB FF               [12]  406 	mov	r7,a
+                                    407 ;	watchdog.c:43: watchdog_last_kernel_seq = last_pet;
+      0000CC 90 00 34         [24]  408 	mov	dptr,#_watchdog_last_kernel_seq
+      0000CF EC               [12]  409 	mov	a,r4
+      0000D0 F0               [24]  410 	movx	@dptr,a
+      0000D1 ED               [12]  411 	mov	a,r5
+      0000D2 A3               [24]  412 	inc	dptr
+      0000D3 F0               [24]  413 	movx	@dptr,a
+      0000D4 EE               [12]  414 	mov	a,r6
+      0000D5 A3               [24]  415 	inc	dptr
+      0000D6 F0               [24]  416 	movx	@dptr,a
+      0000D7 EF               [12]  417 	mov	a,r7
+      0000D8 A3               [24]  418 	inc	dptr
+      0000D9 F0               [24]  419 	movx	@dptr,a
+                                    420 ;	watchdog.c:44: kernel_timeout = 0;
+      0000DA E4               [12]  421 	clr	a
+      0000DB F5*04            [12]  422 	mov	_main_kernel_timeout_10000_8,a
+      0000DD F5*05            [12]  423 	mov	(_main_kernel_timeout_10000_8 + 1),a
+                                    424 ;	watchdog.c:45: pet_hw();
+      0000DF C0 07            [24]  425 	push	ar7
+      0000E1 C0 06            [24]  426 	push	ar6
+      0000E3 C0 05            [24]  427 	push	ar5
+      0000E5 C0 04            [24]  428 	push	ar4
+      0000E7 12r00r00         [24]  429 	lcall	_pet_hw
+      0000EA D0 04            [24]  430 	pop	ar4
+      0000EC D0 05            [24]  431 	pop	ar5
+      0000EE D0 06            [24]  432 	pop	ar6
+      0000F0 D0 07            [24]  433 	pop	ar7
+      0000F2 80 30            [24]  434 	sjmp	00105$
+      0000F4                        435 00104$:
+                                    436 ;	watchdog.c:46: } else if (++kernel_timeout > 60000u) {
+      0000F4 05*04            [12]  437 	inc	_main_kernel_timeout_10000_8
+      0000F6 E4               [12]  438 	clr	a
+      0000F7 B5*04 02         [24]  439 	cjne	a,_main_kernel_timeout_10000_8,00154$
+      0000FA 05*05            [12]  440 	inc	(_main_kernel_timeout_10000_8 + 1)
+      0000FC                        441 00154$:
+      0000FC AA*04            [24]  442 	mov	r2,_main_kernel_timeout_10000_8
+      0000FE AB*05            [24]  443 	mov	r3,(_main_kernel_timeout_10000_8 + 1)
+      000100 C3               [12]  444 	clr	c
+      000101 74 60            [12]  445 	mov	a,#0x60
+      000103 9A               [12]  446 	subb	a,r2
+      000104 74 EA            [12]  447 	mov	a,#0xea
+      000106 9B               [12]  448 	subb	a,r3
+      000107 50 1B            [24]  449 	jnc	00105$
+                                    450 ;	watchdog.c:47: do_reset(0x80510001UL);
+      000109 90 00 01         [24]  451 	mov	dptr,#0x0001
+      00010C 75 F0 51         [24]  452 	mov	b, #0x51
+      00010F 74 80            [12]  453 	mov	a, #0x80
+      000111 C0 07            [24]  454 	push	ar7
+      000113 C0 06            [24]  455 	push	ar6
+      000115 C0 05            [24]  456 	push	ar5
+      000117 C0 04            [24]  457 	push	ar4
+      000119 12r00r22         [24]  458 	lcall	_do_reset
+      00011C D0 04            [24]  459 	pop	ar4
+      00011E D0 05            [24]  460 	pop	ar5
+      000120 D0 06            [24]  461 	pop	ar6
+      000122 D0 07            [24]  462 	pop	ar7
+      000124                        463 00105$:
+                                    464 ;	watchdog.c:50: if (worker_heartbeat != last_worker) {
+      000124 90 00 24         [24]  465 	mov	dptr,#_worker_heartbeat
+      000127 E0               [24]  466 	movx	a,@dptr
+      000128 F8               [12]  467 	mov	r0,a
+      000129 A3               [24]  468 	inc	dptr
+      00012A E0               [24]  469 	movx	a,@dptr
+      00012B F9               [12]  470 	mov	r1,a
+      00012C A3               [24]  471 	inc	dptr
+      00012D E0               [24]  472 	movx	a,@dptr
+      00012E FA               [12]  473 	mov	r2,a
+      00012F A3               [24]  474 	inc	dptr
+      000130 E0               [24]  475 	movx	a,@dptr
+      000131 FB               [12]  476 	mov	r3,a
+      000132 E8               [12]  477 	mov	a,r0
+      000133 B5*00 0E         [24]  478 	cjne	a,_main_last_worker_10000_8,00156$
+      000136 E9               [12]  479 	mov	a,r1
+      000137 B5*01 0A         [24]  480 	cjne	a,(_main_last_worker_10000_8 + 1),00156$
+      00013A EA               [12]  481 	mov	a,r2
+      00013B B5*02 06         [24]  482 	cjne	a,(_main_last_worker_10000_8 + 2),00156$
+      00013E EB               [12]  483 	mov	a,r3
+      00013F B5*03 02         [24]  484 	cjne	a,(_main_last_worker_10000_8 + 3),00156$
+      000142 80 2C            [24]  485 	sjmp	00110$
+      000144                        486 00156$:
+                                    487 ;	watchdog.c:51: last_worker = worker_heartbeat;
+      000144 90 00 24         [24]  488 	mov	dptr,#_worker_heartbeat
+      000147 E0               [24]  489 	movx	a,@dptr
+      000148 F5*00            [12]  490 	mov	_main_last_worker_10000_8,a
+      00014A A3               [24]  491 	inc	dptr
+      00014B E0               [24]  492 	movx	a,@dptr
+      00014C F5*01            [12]  493 	mov	(_main_last_worker_10000_8 + 1),a
+      00014E A3               [24]  494 	inc	dptr
+      00014F E0               [24]  495 	movx	a,@dptr
+      000150 F5*02            [12]  496 	mov	(_main_last_worker_10000_8 + 2),a
+      000152 A3               [24]  497 	inc	dptr
+      000153 E0               [24]  498 	movx	a,@dptr
+      000154 F5*03            [12]  499 	mov	(_main_last_worker_10000_8 + 3),a
+                                    500 ;	watchdog.c:52: watchdog_last_worker_seq = last_worker;
+      000156 90 00 38         [24]  501 	mov	dptr,#_watchdog_last_worker_seq
+      000159 E5*00            [12]  502 	mov	a,_main_last_worker_10000_8
+      00015B F0               [24]  503 	movx	@dptr,a
+      00015C E5*01            [12]  504 	mov	a,(_main_last_worker_10000_8 + 1)
+      00015E A3               [24]  505 	inc	dptr
+      00015F F0               [24]  506 	movx	@dptr,a
+      000160 E5*02            [12]  507 	mov	a,(_main_last_worker_10000_8 + 2)
+      000162 A3               [24]  508 	inc	dptr
+      000163 F0               [24]  509 	movx	@dptr,a
+      000164 E5*03            [12]  510 	mov	a,(_main_last_worker_10000_8 + 3)
+      000166 A3               [24]  511 	inc	dptr
+      000167 F0               [24]  512 	movx	@dptr,a
+                                    513 ;	watchdog.c:53: worker_timeout = 0;
+      000168 E4               [12]  514 	clr	a
+      000169 F5*06            [12]  515 	mov	_main_worker_timeout_10000_8,a
+      00016B F5*07            [12]  516 	mov	(_main_worker_timeout_10000_8 + 1),a
+      00016D 02r00r9E         [24]  517 	ljmp	00113$
+      000170                        518 00110$:
+                                    519 ;	watchdog.c:54: } else if (worker_state == 3u && ++worker_timeout > 60000u) {
+      000170 90 00 28         [24]  520 	mov	dptr,#_worker_state
+      000173 E0               [24]  521 	movx	a,@dptr
+      000174 F8               [12]  522 	mov	r0,a
+      000175 A3               [24]  523 	inc	dptr
+      000176 E0               [24]  524 	movx	a,@dptr
+      000177 F9               [12]  525 	mov	r1,a
+      000178 A3               [24]  526 	inc	dptr
+      000179 E0               [24]  527 	movx	a,@dptr
+      00017A FA               [12]  528 	mov	r2,a
+      00017B A3               [24]  529 	inc	dptr
+      00017C E0               [24]  530 	movx	a,@dptr
+      00017D FB               [12]  531 	mov	r3,a
+      00017E B8 03 0B         [24]  532 	cjne	r0,#0x03,00157$
+      000181 B9 00 08         [24]  533 	cjne	r1,#0x00,00157$
+      000184 BA 00 05         [24]  534 	cjne	r2,#0x00,00157$
+      000187 BB 00 02         [24]  535 	cjne	r3,#0x00,00157$
+      00018A 80 03            [24]  536 	sjmp	00158$
+      00018C                        537 00157$:
+      00018C 02r00r9E         [24]  538 	ljmp	00113$
+      00018F                        539 00158$:
+      00018F 05*06            [12]  540 	inc	_main_worker_timeout_10000_8
+      000191 E4               [12]  541 	clr	a
+      000192 B5*06 02         [24]  542 	cjne	a,_main_worker_timeout_10000_8,00159$
+      000195 05*07            [12]  543 	inc	(_main_worker_timeout_10000_8 + 1)
+      000197                        544 00159$:
+      000197 AA*06            [24]  545 	mov	r2,_main_worker_timeout_10000_8
+      000199 AB*07            [24]  546 	mov	r3,(_main_worker_timeout_10000_8 + 1)
+      00019B C3               [12]  547 	clr	c
+      00019C 74 60            [12]  548 	mov	a,#0x60
+      00019E 9A               [12]  549 	subb	a,r2
+      00019F 74 EA            [12]  550 	mov	a,#0xea
+      0001A1 9B               [12]  551 	subb	a,r3
+      0001A2 40 03            [24]  552 	jc	00160$
+      0001A4 02r00r9E         [24]  553 	ljmp	00113$
+      0001A7                        554 00160$:
+                                    555 ;	watchdog.c:55: do_reset(0x80510002UL);
+      0001A7 90 00 02         [24]  556 	mov	dptr,#0x0002
+      0001AA 75 F0 51         [24]  557 	mov	b, #0x51
+      0001AD 74 80            [12]  558 	mov	a, #0x80
+      0001AF C0 07            [24]  559 	push	ar7
+      0001B1 C0 06            [24]  560 	push	ar6
+      0001B3 C0 05            [24]  561 	push	ar5
+      0001B5 C0 04            [24]  562 	push	ar4
+      0001B7 12r00r22         [24]  563 	lcall	_do_reset
+      0001BA D0 04            [24]  564 	pop	ar4
+      0001BC D0 05            [24]  565 	pop	ar5
+      0001BE D0 06            [24]  566 	pop	ar6
+      0001C0 D0 07            [24]  567 	pop	ar7
+                                    568 ;	watchdog.c:58: }
+      0001C2 02r00r9E         [24]  569 	ljmp	00113$
+                                    570 	.area CSEG    (CODE)
+                                    571 	.area CONST   (CODE)
+                                    572 	.area XINIT   (CODE)
+                                    573 	.area CABS    (ABS,CODE)

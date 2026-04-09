@@ -1,0 +1,1832 @@
+
+build/bootloader.elf:     file format elf64-littleriscv
+
+
+Disassembly of section .text:
+
+0000000080080000 <_start>:
+    80080000:	00003117          	auipc	sp,0x3
+    80080004:	2e010113          	addi	sp,sp,736 # 800832e0 <__stack_top>
+    80080008:	00001297          	auipc	t0,0x1
+    8008000c:	08828293          	addi	t0,t0,136 # 80081090 <s_desc_string>
+    80080010:	00001317          	auipc	t1,0x1
+    80080014:	2d030313          	addi	t1,t1,720 # 800812e0 <s_tusb_inited>
+    80080018:	0062f663          	bgeu	t0,t1,80080024 <_start+0x24>
+    8008001c:	0002b023          	sd	zero,0(t0)
+    80080020:	02a1                	addi	t0,t0,8
+    80080022:	bfdd                	j	80080018 <_start+0x18>
+    80080024:	006000ef          	jal	8008002a <bootloader_main>
+    80080028:	a001                	j	80080028 <_start+0x28>
+
+000000008008002a <bootloader_main>:
+    8008002a:	1101                	addi	sp,sp,-32
+    8008002c:	08017537          	lui	a0,0x8017
+    80080030:	ec06                	sd	ra,24(sp)
+    80080032:	e822                	sd	s0,16(sp)
+    80080034:	e426                	sd	s1,8(sp)
+    80080036:	1000                	addi	s0,sp,32
+    80080038:	0512                	slli	a0,a0,0x4
+    8008003a:	080174b7          	lui	s1,0x8017
+    8008003e:	0492                	slli	s1,s1,0x4
+    80080040:	342000ef          	jal	80080382 <ctl_init_defaults>
+    80080044:	44dc                	lw	a5,12(s1)
+    80080046:	4585                	li	a1,1
+    80080048:	8526                	mv	a0,s1
+    8008004a:	0017e793          	ori	a5,a5,1
+    8008004e:	c4dc                	sw	a5,12(s1)
+    80080050:	384000ef          	jal	800803d4 <ctl_set_stage>
+    80080054:	3ea000ef          	jal	8008043e <usb_serial_init>
+    80080058:	00001517          	auipc	a0,0x1
+    8008005c:	eb850513          	addi	a0,a0,-328 # 80080f10 <tinyusb_dwc2_init+0x9c>
+    80080060:	698000ef          	jal	800806f8 <console_puts>
+    80080064:	00001517          	auipc	a0,0x1
+    80080068:	ecc50513          	addi	a0,a0,-308 # 80080f30 <tinyusb_dwc2_init+0xbc>
+    8008006c:	68c000ef          	jal	800806f8 <console_puts>
+    80080070:	80100537          	lui	a0,0x80100
+    80080074:	6a0000ef          	jal	80080714 <console_puthex>
+    80080078:	00001517          	auipc	a0,0x1
+    8008007c:	ed050513          	addi	a0,a0,-304 # 80080f48 <tinyusb_dwc2_init+0xd4>
+    80080080:	678000ef          	jal	800806f8 <console_puts>
+    80080084:	00001517          	auipc	a0,0x1
+    80080088:	ecc50513          	addi	a0,a0,-308 # 80080f50 <tinyusb_dwc2_init+0xdc>
+    8008008c:	66c000ef          	jal	800806f8 <console_puts>
+    80080090:	80180537          	lui	a0,0x80180
+    80080094:	680000ef          	jal	80080714 <console_puthex>
+    80080098:	00001517          	auipc	a0,0x1
+    8008009c:	eb050513          	addi	a0,a0,-336 # 80080f48 <tinyusb_dwc2_init+0xd4>
+    800800a0:	658000ef          	jal	800806f8 <console_puts>
+    800800a4:	00801537          	lui	a0,0x801
+    800800a8:	0522                	slli	a0,a0,0x8
+    800800aa:	097000ef          	jal	80080940 <sg2002_image_present>
+    800800ae:	e50d                	bnez	a0,800800d8 <bootloader_main+0xae>
+    800800b0:	b00707b7          	lui	a5,0xb0070
+    800800b4:	0785                	addi	a5,a5,1 # ffffffffb0070001 <__stack_top+0xffffffff2ffecd21>
+    800800b6:	c89c                	sw	a5,16(s1)
+    800800b8:	44dc                	lw	a5,12(s1)
+    800800ba:	8526                	mv	a0,s1
+    800800bc:	45a1                	li	a1,8
+    800800be:	0087e793          	ori	a5,a5,8
+    800800c2:	c4dc                	sw	a5,12(s1)
+    800800c4:	310000ef          	jal	800803d4 <ctl_set_stage>
+    800800c8:	00001517          	auipc	a0,0x1
+    800800cc:	ea050513          	addi	a0,a0,-352 # 80080f68 <tinyusb_dwc2_init+0xf4>
+    800800d0:	628000ef          	jal	800806f8 <console_puts>
+    800800d4:	0001                	nop
+    800800d6:	bffd                	j	800800d4 <bootloader_main+0xaa>
+    800800d8:	01003537          	lui	a0,0x1003
+    800800dc:	051e                	slli	a0,a0,0x7
+    800800de:	063000ef          	jal	80080940 <sg2002_image_present>
+    800800e2:	e509                	bnez	a0,800800ec <bootloader_main+0xc2>
+    800800e4:	44dc                	lw	a5,12(s1)
+    800800e6:	0047e793          	ori	a5,a5,4
+    800800ea:	c4dc                	sw	a5,12(s1)
+    800800ec:	08017537          	lui	a0,0x8017
+    800800f0:	0512                	slli	a0,a0,0x4
+    800800f2:	268000ef          	jal	8008035a <ctl_flush>
+    800800f6:	08017537          	lui	a0,0x8017
+    800800fa:	4589                	li	a1,2
+    800800fc:	0512                	slli	a0,a0,0x4
+    800800fe:	2d6000ef          	jal	800803d4 <ctl_set_stage>
+    80080102:	00001517          	auipc	a0,0x1
+    80080106:	e7650513          	addi	a0,a0,-394 # 80080f78 <tinyusb_dwc2_init+0x104>
+    8008010a:	5ee000ef          	jal	800806f8 <console_puts>
+    8008010e:	0107f537          	lui	a0,0x107f
+    80080112:	051e                	slli	a0,a0,0x7
+    80080114:	0d9000ef          	jal	800809ec <sg2002_boot_8051>
+    80080118:	08017537          	lui	a0,0x8017
+    8008011c:	458d                	li	a1,3
+    8008011e:	0512                	slli	a0,a0,0x4
+    80080120:	2b4000ef          	jal	800803d4 <ctl_set_stage>
+    80080124:	00001517          	auipc	a0,0x1
+    80080128:	e7450513          	addi	a0,a0,-396 # 80080f98 <tinyusb_dwc2_init+0x124>
+    8008012c:	5cc000ef          	jal	800806f8 <console_puts>
+    80080130:	00801537          	lui	a0,0x801
+    80080134:	0522                	slli	a0,a0,0x8
+    80080136:	0e9000ef          	jal	80080a1e <kraken_jump_to>
+
+000000008008013a <uart_putc>:
+    8008013a:	1141                	addi	sp,sp,-16
+    8008013c:	04140737          	lui	a4,0x4140
+    80080140:	e022                	sd	s0,0(sp)
+    80080142:	e406                	sd	ra,8(sp)
+    80080144:	0800                	addi	s0,sp,16
+    80080146:	0751                	addi	a4,a4,20 # 4140014 <_start-0x7bf3ffec>
+    80080148:	431c                	lw	a5,0(a4)
+    8008014a:	0207f793          	andi	a5,a5,32
+    8008014e:	dfed                	beqz	a5,80080148 <uart_putc+0xe>
+    80080150:	60a2                	ld	ra,8(sp)
+    80080152:	6402                	ld	s0,0(sp)
+    80080154:	2501                	sext.w	a0,a0
+    80080156:	041407b7          	lui	a5,0x4140
+    8008015a:	c388                	sw	a0,0(a5)
+    8008015c:	0141                	addi	sp,sp,16
+    8008015e:	8082                	ret
+
+0000000080080160 <uart_puts>:
+    80080160:	1101                	addi	sp,sp,-32
+    80080162:	e822                	sd	s0,16(sp)
+    80080164:	e426                	sd	s1,8(sp)
+    80080166:	e04a                	sd	s2,0(sp)
+    80080168:	ec06                	sd	ra,24(sp)
+    8008016a:	1000                	addi	s0,sp,32
+    8008016c:	84aa                	mv	s1,a0
+    8008016e:	4929                	li	s2,10
+    80080170:	0004c783          	lbu	a5,0(s1) # 8017000 <_start-0x78069000>
+    80080174:	e799                	bnez	a5,80080182 <uart_puts+0x22>
+    80080176:	60e2                	ld	ra,24(sp)
+    80080178:	6442                	ld	s0,16(sp)
+    8008017a:	64a2                	ld	s1,8(sp)
+    8008017c:	6902                	ld	s2,0(sp)
+    8008017e:	6105                	addi	sp,sp,32
+    80080180:	8082                	ret
+    80080182:	01279563          	bne	a5,s2,8008018c <uart_puts+0x2c>
+    80080186:	4535                	li	a0,13
+    80080188:	fb3ff0ef          	jal	8008013a <uart_putc>
+    8008018c:	0004c503          	lbu	a0,0(s1)
+    80080190:	0485                	addi	s1,s1,1
+    80080192:	fa9ff0ef          	jal	8008013a <uart_putc>
+    80080196:	bfe9                	j	80080170 <uart_puts+0x10>
+
+0000000080080198 <uart_puthex>:
+    80080198:	7179                	addi	sp,sp,-48
+    8008019a:	f022                	sd	s0,32(sp)
+    8008019c:	ec26                	sd	s1,24(sp)
+    8008019e:	e84a                	sd	s2,16(sp)
+    800801a0:	e44e                	sd	s3,8(sp)
+    800801a2:	e052                	sd	s4,0(sp)
+    800801a4:	f406                	sd	ra,40(sp)
+    800801a6:	1800                	addi	s0,sp,48
+    800801a8:	892a                	mv	s2,a0
+    800801aa:	44f1                	li	s1,28
+    800801ac:	00001a17          	auipc	s4,0x1
+    800801b0:	e4ca0a13          	addi	s4,s4,-436 # 80080ff8 <hex.0>
+    800801b4:	59f1                	li	s3,-4
+    800801b6:	009957bb          	srlw	a5,s2,s1
+    800801ba:	8bbd                	andi	a5,a5,15
+    800801bc:	97d2                	add	a5,a5,s4
+    800801be:	0007c503          	lbu	a0,0(a5) # 4140000 <_start-0x7bf40000>
+    800801c2:	34f1                	addiw	s1,s1,-4
+    800801c4:	f77ff0ef          	jal	8008013a <uart_putc>
+    800801c8:	ff3497e3          	bne	s1,s3,800801b6 <uart_puthex+0x1e>
+    800801cc:	70a2                	ld	ra,40(sp)
+    800801ce:	7402                	ld	s0,32(sp)
+    800801d0:	64e2                	ld	s1,24(sp)
+    800801d2:	6942                	ld	s2,16(sp)
+    800801d4:	69a2                	ld	s3,8(sp)
+    800801d6:	6a02                	ld	s4,0(sp)
+    800801d8:	6145                	addi	sp,sp,48
+    800801da:	8082                	ret
+
+00000000800801dc <uart_puthex64>:
+    800801dc:	1101                	addi	sp,sp,-32
+    800801de:	e822                	sd	s0,16(sp)
+    800801e0:	e426                	sd	s1,8(sp)
+    800801e2:	ec06                	sd	ra,24(sp)
+    800801e4:	1000                	addi	s0,sp,32
+    800801e6:	84aa                	mv	s1,a0
+    800801e8:	9501                	srai	a0,a0,0x20
+    800801ea:	fafff0ef          	jal	80080198 <uart_puthex>
+    800801ee:	6442                	ld	s0,16(sp)
+    800801f0:	60e2                	ld	ra,24(sp)
+    800801f2:	0004851b          	sext.w	a0,s1
+    800801f6:	64a2                	ld	s1,8(sp)
+    800801f8:	6105                	addi	sp,sp,32
+    800801fa:	bf79                	j	80080198 <uart_puthex>
+
+00000000800801fc <delay_cycles>:
+    800801fc:	1101                	addi	sp,sp,-32
+    800801fe:	e822                	sd	s0,16(sp)
+    80080200:	ec06                	sd	ra,24(sp)
+    80080202:	1000                	addi	s0,sp,32
+    80080204:	fea42623          	sw	a0,-20(s0)
+    80080208:	fec42783          	lw	a5,-20(s0)
+    8008020c:	fff7871b          	addiw	a4,a5,-1
+    80080210:	fee42623          	sw	a4,-20(s0)
+    80080214:	e789                	bnez	a5,8008021e <delay_cycles+0x22>
+    80080216:	60e2                	ld	ra,24(sp)
+    80080218:	6442                	ld	s0,16(sp)
+    8008021a:	6105                	addi	sp,sp,32
+    8008021c:	8082                	ret
+    8008021e:	0001                	nop
+    80080220:	b7e5                	j	80080208 <delay_cycles+0xc>
+
+0000000080080222 <mailbox_send_worker>:
+    80080222:	1141                	addi	sp,sp,-16
+    80080224:	e022                	sd	s0,0(sp)
+    80080226:	e406                	sd	ra,8(sp)
+    80080228:	0800                	addi	s0,sp,16
+    8008022a:	030507b7          	lui	a5,0x3050
+    8008022e:	d388                	sw	a0,32(a5)
+    80080230:	d3cc                	sw	a1,36(a5)
+    80080232:	0330000f          	fence	rw,rw
+    80080236:	60a2                	ld	ra,8(sp)
+    80080238:	6402                	ld	s0,0(sp)
+    8008023a:	0141                	addi	sp,sp,16
+    8008023c:	8082                	ret
+
+000000008008023e <mailbox_send_8051>:
+    8008023e:	1141                	addi	sp,sp,-16
+    80080240:	e022                	sd	s0,0(sp)
+    80080242:	e406                	sd	ra,8(sp)
+    80080244:	0800                	addi	s0,sp,16
+    80080246:	050297b7          	lui	a5,0x5029
+    8008024a:	d388                	sw	a0,32(a5)
+    8008024c:	d3cc                	sw	a1,36(a5)
+    8008024e:	0330000f          	fence	rw,rw
+    80080252:	60a2                	ld	ra,8(sp)
+    80080254:	6402                	ld	s0,0(sp)
+    80080256:	0141                	addi	sp,sp,16
+    80080258:	8082                	ret
+
+000000008008025a <flush_dcache_range>:
+    8008025a:	1141                	addi	sp,sp,-16
+    8008025c:	e022                	sd	s0,0(sp)
+    8008025e:	e406                	sd	ra,8(sp)
+    80080260:	0800                	addi	s0,sp,16
+    80080262:	00b57a63          	bgeu	a0,a1,80080276 <flush_dcache_range+0x1c>
+    80080266:	0330000f          	fence	rw,rw
+    8008026a:	fc057513          	andi	a0,a0,-64
+    8008026e:	00b56863          	bltu	a0,a1,8008027e <flush_dcache_range+0x24>
+    80080272:	0330000f          	fence	rw,rw
+    80080276:	60a2                	ld	ra,8(sp)
+    80080278:	6402                	ld	s0,0(sp)
+    8008027a:	0141                	addi	sp,sp,16
+    8008027c:	8082                	ret
+    8008027e:	0330000f          	fence	rw,rw
+    80080282:	04050513          	addi	a0,a0,64 # 801040 <_start-0x7f87efc0>
+    80080286:	b7e5                	j	8008026e <flush_dcache_range+0x14>
+
+0000000080080288 <inval_dcache_range>:
+    80080288:	1141                	addi	sp,sp,-16
+    8008028a:	e022                	sd	s0,0(sp)
+    8008028c:	e406                	sd	ra,8(sp)
+    8008028e:	0800                	addi	s0,sp,16
+    80080290:	6402                	ld	s0,0(sp)
+    80080292:	60a2                	ld	ra,8(sp)
+    80080294:	0141                	addi	sp,sp,16
+    80080296:	b7d1                	j	8008025a <flush_dcache_range>
+
+0000000080080298 <flush_all_caches>:
+    80080298:	1141                	addi	sp,sp,-16
+    8008029a:	e022                	sd	s0,0(sp)
+    8008029c:	e406                	sd	ra,8(sp)
+    8008029e:	0800                	addi	s0,sp,16
+    800802a0:	0330000f          	fence	rw,rw
+    800802a4:	0000100f          	.insn	4, 0x100f
+    800802a8:	0330000f          	fence	rw,rw
+    800802ac:	60a2                	ld	ra,8(sp)
+    800802ae:	6402                	ld	s0,0(sp)
+    800802b0:	0141                	addi	sp,sp,16
+    800802b2:	8082                	ret
+
+00000000800802b4 <sg2002_memcpy>:
+    800802b4:	1141                	addi	sp,sp,-16
+    800802b6:	e022                	sd	s0,0(sp)
+    800802b8:	e406                	sd	ra,8(sp)
+    800802ba:	0800                	addi	s0,sp,16
+    800802bc:	4781                	li	a5,0
+    800802be:	00f61663          	bne	a2,a5,800802ca <sg2002_memcpy+0x16>
+    800802c2:	60a2                	ld	ra,8(sp)
+    800802c4:	6402                	ld	s0,0(sp)
+    800802c6:	0141                	addi	sp,sp,16
+    800802c8:	8082                	ret
+    800802ca:	00f58733          	add	a4,a1,a5
+    800802ce:	00074683          	lbu	a3,0(a4)
+    800802d2:	00f50733          	add	a4,a0,a5
+    800802d6:	0785                	addi	a5,a5,1 # 5029001 <_start-0x7b056fff>
+    800802d8:	00d70023          	sb	a3,0(a4)
+    800802dc:	b7cd                	j	800802be <sg2002_memcpy+0xa>
+
+00000000800802de <sg2002_memset>:
+    800802de:	1141                	addi	sp,sp,-16
+    800802e0:	e022                	sd	s0,0(sp)
+    800802e2:	e406                	sd	ra,8(sp)
+    800802e4:	0800                	addi	s0,sp,16
+    800802e6:	0ff5f593          	zext.b	a1,a1
+    800802ea:	962a                	add	a2,a2,a0
+    800802ec:	00c51663          	bne	a0,a2,800802f8 <sg2002_memset+0x1a>
+    800802f0:	60a2                	ld	ra,8(sp)
+    800802f2:	6402                	ld	s0,0(sp)
+    800802f4:	0141                	addi	sp,sp,16
+    800802f6:	8082                	ret
+    800802f8:	0505                	addi	a0,a0,1
+    800802fa:	feb50fa3          	sb	a1,-1(a0)
+    800802fe:	b7fd                	j	800802ec <sg2002_memset+0xe>
+
+0000000080080300 <sg2002_memcmp>:
+    80080300:	1141                	addi	sp,sp,-16
+    80080302:	e022                	sd	s0,0(sp)
+    80080304:	e406                	sd	ra,8(sp)
+    80080306:	0800                	addi	s0,sp,16
+    80080308:	4701                	li	a4,0
+    8008030a:	00e61463          	bne	a2,a4,80080312 <sg2002_memcmp+0x12>
+    8008030e:	4501                	li	a0,0
+    80080310:	a831                	j	8008032c <sg2002_memcmp+0x2c>
+    80080312:	00e507b3          	add	a5,a0,a4
+    80080316:	0705                	addi	a4,a4,1
+    80080318:	00e586b3          	add	a3,a1,a4
+    8008031c:	0007c783          	lbu	a5,0(a5)
+    80080320:	fff6c683          	lbu	a3,-1(a3)
+    80080324:	fed783e3          	beq	a5,a3,8008030a <sg2002_memcmp+0xa>
+    80080328:	40d7853b          	subw	a0,a5,a3
+    8008032c:	60a2                	ld	ra,8(sp)
+    8008032e:	6402                	ld	s0,0(sp)
+    80080330:	0141                	addi	sp,sp,16
+    80080332:	8082                	ret
+
+0000000080080334 <sg2002_strnlen>:
+    80080334:	1141                	addi	sp,sp,-16
+    80080336:	e022                	sd	s0,0(sp)
+    80080338:	e406                	sd	ra,8(sp)
+    8008033a:	0800                	addi	s0,sp,16
+    8008033c:	87aa                	mv	a5,a0
+    8008033e:	4501                	li	a0,0
+    80080340:	00b50763          	beq	a0,a1,8008034e <sg2002_strnlen+0x1a>
+    80080344:	00a78733          	add	a4,a5,a0
+    80080348:	00074703          	lbu	a4,0(a4)
+    8008034c:	e709                	bnez	a4,80080356 <sg2002_strnlen+0x22>
+    8008034e:	60a2                	ld	ra,8(sp)
+    80080350:	6402                	ld	s0,0(sp)
+    80080352:	0141                	addi	sp,sp,16
+    80080354:	8082                	ret
+    80080356:	0505                	addi	a0,a0,1
+    80080358:	b7e5                	j	80080340 <sg2002_strnlen+0xc>
+
+000000008008035a <ctl_flush>:
+    8008035a:	1141                	addi	sp,sp,-16
+    8008035c:	e022                	sd	s0,0(sp)
+    8008035e:	e406                	sd	ra,8(sp)
+    80080360:	0800                	addi	s0,sp,16
+    80080362:	6402                	ld	s0,0(sp)
+    80080364:	60a2                	ld	ra,8(sp)
+    80080366:	4a050593          	addi	a1,a0,1184
+    8008036a:	0141                	addi	sp,sp,16
+    8008036c:	b5fd                	j	8008025a <flush_dcache_range>
+
+000000008008036e <ctl_invalidate>:
+    8008036e:	1141                	addi	sp,sp,-16
+    80080370:	e022                	sd	s0,0(sp)
+    80080372:	e406                	sd	ra,8(sp)
+    80080374:	0800                	addi	s0,sp,16
+    80080376:	6402                	ld	s0,0(sp)
+    80080378:	60a2                	ld	ra,8(sp)
+    8008037a:	4a050593          	addi	a1,a0,1184
+    8008037e:	0141                	addi	sp,sp,16
+    80080380:	b721                	j	80080288 <inval_dcache_range>
+
+0000000080080382 <ctl_init_defaults>:
+    80080382:	1101                	addi	sp,sp,-32
+    80080384:	e822                	sd	s0,16(sp)
+    80080386:	e426                	sd	s1,8(sp)
+    80080388:	ec06                	sd	ra,24(sp)
+    8008038a:	1000                	addi	s0,sp,32
+    8008038c:	4a000613          	li	a2,1184
+    80080390:	4581                	li	a1,0
+    80080392:	84aa                	mv	s1,a0
+    80080394:	f4bff0ef          	jal	800802de <sg2002_memset>
+    80080398:	4b5247b7          	lui	a5,0x4b524
+    8008039c:	14b78793          	addi	a5,a5,331 # 4b52414b <_start-0x34b5beb5>
+    800803a0:	c09c                	sw	a5,0(s1)
+    800803a2:	478d                	li	a5,3
+    800803a4:	c0dc                	sw	a5,4(s1)
+    800803a6:	0004a423          	sw	zero,8(s1)
+    800803aa:	801007b7          	lui	a5,0x80100
+    800803ae:	cc9c                	sw	a5,24(s1)
+    800803b0:	801807b7          	lui	a5,0x80180
+    800803b4:	ccdc                	sw	a5,28(s1)
+    800803b6:	0204a423          	sw	zero,40(s1)
+    800803ba:	0404a023          	sw	zero,64(s1)
+    800803be:	0404ae23          	sw	zero,92(s1)
+    800803c2:	4785                	li	a5,1
+    800803c4:	dcbc                	sw	a5,120(s1)
+    800803c6:	6442                	ld	s0,16(sp)
+    800803c8:	60e2                	ld	ra,24(sp)
+    800803ca:	c8dc                	sw	a5,20(s1)
+    800803cc:	8526                	mv	a0,s1
+    800803ce:	64a2                	ld	s1,8(sp)
+    800803d0:	6105                	addi	sp,sp,32
+    800803d2:	b761                	j	8008035a <ctl_flush>
+
+00000000800803d4 <ctl_set_stage>:
+    800803d4:	1141                	addi	sp,sp,-16
+    800803d6:	e022                	sd	s0,0(sp)
+    800803d8:	e406                	sd	ra,8(sp)
+    800803da:	0800                	addi	s0,sp,16
+    800803dc:	6402                	ld	s0,0(sp)
+    800803de:	60a2                	ld	ra,8(sp)
+    800803e0:	c50c                	sw	a1,8(a0)
+    800803e2:	0141                	addi	sp,sp,16
+    800803e4:	bf9d                	j	8008035a <ctl_flush>
+
+00000000800803e6 <ctl_next_cmd_seq>:
+    800803e6:	1101                	addi	sp,sp,-32
+    800803e8:	e822                	sd	s0,16(sp)
+    800803ea:	e426                	sd	s1,8(sp)
+    800803ec:	ec06                	sd	ra,24(sp)
+    800803ee:	1000                	addi	s0,sp,32
+    800803f0:	493c                	lw	a5,80(a0)
+    800803f2:	84aa                	mv	s1,a0
+    800803f4:	2785                	addiw	a5,a5,1 # ffffffff80180001 <__stack_top+0xffffffff000fcd21>
+    800803f6:	c93c                	sw	a5,80(a0)
+    800803f8:	f63ff0ef          	jal	8008035a <ctl_flush>
+    800803fc:	60e2                	ld	ra,24(sp)
+    800803fe:	6442                	ld	s0,16(sp)
+    80080400:	48a8                	lw	a0,80(s1)
+    80080402:	64a2                	ld	s1,8(sp)
+    80080404:	6105                	addi	sp,sp,32
+    80080406:	8082                	ret
+
+0000000080080408 <usb_serial_set_state>:
+    80080408:	1141                	addi	sp,sp,-16
+    8008040a:	e022                	sd	s0,0(sp)
+    8008040c:	e406                	sd	ra,8(sp)
+    8008040e:	0800                	addi	s0,sp,16
+    80080410:	080177b7          	lui	a5,0x8017
+    80080414:	872a                	mv	a4,a0
+    80080416:	6402                	ld	s0,0(sp)
+    80080418:	00479513          	slli	a0,a5,0x4
+    8008041c:	60a2                	ld	ra,8(sp)
+    8008041e:	cd78                	sw	a4,92(a0)
+    80080420:	d96c                	sw	a1,116(a0)
+    80080422:	0141                	addi	sp,sp,16
+    80080424:	bf1d                	j	8008035a <ctl_flush>
+
+0000000080080426 <usb_serial_connected>:
+    80080426:	1141                	addi	sp,sp,-16
+    80080428:	e022                	sd	s0,0(sp)
+    8008042a:	e406                	sd	ra,8(sp)
+    8008042c:	0800                	addi	s0,sp,16
+    8008042e:	4501                	li	a0,0
+    80080430:	66e000ef          	jal	80080a9e <tud_cdc_n_connected>
+    80080434:	60a2                	ld	ra,8(sp)
+    80080436:	6402                	ld	s0,0(sp)
+    80080438:	2501                	sext.w	a0,a0
+    8008043a:	0141                	addi	sp,sp,16
+    8008043c:	8082                	ret
+
+000000008008043e <usb_serial_init>:
+    8008043e:	1101                	addi	sp,sp,-32
+    80080440:	ec06                	sd	ra,24(sp)
+    80080442:	e822                	sd	s0,16(sp)
+    80080444:	e426                	sd	s1,8(sp)
+    80080446:	1000                	addi	s0,sp,32
+    80080448:	080174b7          	lui	s1,0x8017
+    8008044c:	0492                	slli	s1,s1,0x4
+    8008044e:	4785                	li	a5,1
+    80080450:	ccfc                	sw	a5,92(s1)
+    80080452:	d0bc                	sw	a5,96(s1)
+    80080454:	0604a223          	sw	zero,100(s1) # 8017064 <_start-0x78068f9c>
+    80080458:	0604a423          	sw	zero,104(s1)
+    8008045c:	0604a623          	sw	zero,108(s1)
+    80080460:	0604a823          	sw	zero,112(s1)
+    80080464:	8526                	mv	a0,s1
+    80080466:	0604aa23          	sw	zero,116(s1)
+    8008046a:	ef1ff0ef          	jal	8008035a <ctl_flush>
+    8008046e:	5c6000ef          	jal	80080a34 <tusb_init>
+    80080472:	ed19                	bnez	a0,80080490 <usb_serial_init+0x52>
+    80080474:	44dc                	lw	a5,12(s1)
+    80080476:	6442                	ld	s0,16(sp)
+    80080478:	60e2                	ld	ra,24(sp)
+    8008047a:	0407e793          	ori	a5,a5,64
+    8008047e:	c4dc                	sw	a5,12(s1)
+    80080480:	64a2                	ld	s1,8(sp)
+    80080482:	545555b7          	lui	a1,0x54555
+    80080486:	34258593          	addi	a1,a1,834 # 54555342 <_start-0x2bb2acbe>
+    8008048a:	4511                	li	a0,4
+    8008048c:	6105                	addi	sp,sp,32
+    8008048e:	bfad                	j	80080408 <usb_serial_set_state>
+    80080490:	6442                	ld	s0,16(sp)
+    80080492:	4789                	li	a5,2
+    80080494:	60e2                	ld	ra,24(sp)
+    80080496:	ccfc                	sw	a5,92(s1)
+    80080498:	8526                	mv	a0,s1
+    8008049a:	64a2                	ld	s1,8(sp)
+    8008049c:	6105                	addi	sp,sp,32
+    8008049e:	bd75                	j	8008035a <ctl_flush>
+
+00000000800804a0 <usb_serial_poll>:
+    800804a0:	715d                	addi	sp,sp,-80
+    800804a2:	08017537          	lui	a0,0x8017
+    800804a6:	e486                	sd	ra,72(sp)
+    800804a8:	e0a2                	sd	s0,64(sp)
+    800804aa:	fc26                	sd	s1,56(sp)
+    800804ac:	0880                	addi	s0,sp,80
+    800804ae:	f84a                	sd	s2,48(sp)
+    800804b0:	f44e                	sd	s3,40(sp)
+    800804b2:	f052                	sd	s4,32(sp)
+    800804b4:	0512                	slli	a0,a0,0x4
+    800804b6:	eb9ff0ef          	jal	8008036e <ctl_invalidate>
+    800804ba:	5ac000ef          	jal	80080a66 <tud_inited>
+    800804be:	12050563          	beqz	a0,800805e8 <usb_serial_poll+0x148>
+    800804c2:	080174b7          	lui	s1,0x8017
+    800804c6:	5b8000ef          	jal	80080a7e <tud_task>
+    800804ca:	0492                	slli	s1,s1,0x4
+    800804cc:	1ff00993          	li	s3,511
+    800804d0:	fb040913          	addi	s2,s0,-80
+    800804d4:	4501                	li	a0,0
+    800804d6:	5d8000ef          	jal	80080aae <tud_cdc_n_available>
+    800804da:	c911                	beqz	a0,800804ee <usb_serial_poll+0x4e>
+    800804dc:	50f8                	lw	a4,100(s1)
+    800804de:	54bc                	lw	a5,104(s1)
+    800804e0:	0cf76663          	bltu	a4,a5,800805ac <usb_serial_poll+0x10c>
+    800804e4:	50fc                	lw	a5,100(s1)
+    800804e6:	54b8                	lw	a4,104(s1)
+    800804e8:	9f99                	subw	a5,a5,a4
+    800804ea:	09379163          	bne	a5,s3,8008056c <usb_serial_poll+0xcc>
+    800804ee:	4501                	li	a0,0
+    800804f0:	5ae000ef          	jal	80080a9e <tud_cdc_n_connected>
+    800804f4:	cd0d                	beqz	a0,8008052e <usb_serial_poll+0x8e>
+    800804f6:	080174b7          	lui	s1,0x8017
+    800804fa:	0492                	slli	s1,s1,0x4
+    800804fc:	fb040993          	addi	s3,s0,-80
+    80080500:	02000a13          	li	s4,32
+    80080504:	58b8                	lw	a4,112(s1)
+    80080506:	54fc                	lw	a5,108(s1)
+    80080508:	02f70063          	beq	a4,a5,80080528 <usb_serial_poll+0x88>
+    8008050c:	4601                	li	a2,0
+    8008050e:	58b8                	lw	a4,112(s1)
+    80080510:	54fc                	lw	a5,108(s1)
+    80080512:	0af71263          	bne	a4,a5,800805b6 <usb_serial_poll+0x116>
+    80080516:	0006091b          	sext.w	s2,a2
+    8008051a:	864a                	mv	a2,s2
+    8008051c:	85ce                	mv	a1,s3
+    8008051e:	4501                	li	a0,0
+    80080520:	5b2000ef          	jal	80080ad2 <tud_cdc_n_write>
+    80080524:	fea900e3          	beq	s2,a0,80080504 <usb_serial_poll+0x64>
+    80080528:	4501                	li	a0,0
+    8008052a:	5bc000ef          	jal	80080ae6 <tud_cdc_n_write_flush>
+    8008052e:	4501                	li	a0,0
+    80080530:	56e000ef          	jal	80080a9e <tud_cdc_n_connected>
+    80080534:	08017737          	lui	a4,0x8017
+    80080538:	0712                	slli	a4,a4,0x4
+    8008053a:	2509                	addiw	a0,a0,2 # 8017002 <_start-0x78068ffe>
+    8008053c:	cf68                	sw	a0,92(a4)
+    8008053e:	5774                	lw	a3,108(a4)
+    80080540:	5b3c                	lw	a5,112(a4)
+    80080542:	08f6ee63          	bltu	a3,a5,800805de <usb_serial_poll+0x13e>
+    80080546:	577c                	lw	a5,108(a4)
+    80080548:	5b38                	lw	a4,112(a4)
+    8008054a:	9f99                	subw	a5,a5,a4
+    8008054c:	6406                	ld	s0,64(sp)
+    8008054e:	0107979b          	slliw	a5,a5,0x10
+    80080552:	08017537          	lui	a0,0x8017
+    80080556:	60a6                	ld	ra,72(sp)
+    80080558:	74e2                	ld	s1,56(sp)
+    8008055a:	7942                	ld	s2,48(sp)
+    8008055c:	79a2                	ld	s3,40(sp)
+    8008055e:	7a02                	ld	s4,32(sp)
+    80080560:	0017e793          	ori	a5,a5,1
+    80080564:	0512                	slli	a0,a0,0x4
+    80080566:	d13c                	sw	a5,96(a0)
+    80080568:	6161                	addi	sp,sp,80
+    8008056a:	bbc5                	j	8008035a <ctl_flush>
+    8008056c:	02000613          	li	a2,32
+    80080570:	85ca                	mv	a1,s2
+    80080572:	4501                	li	a0,0
+    80080574:	54a000ef          	jal	80080abe <tud_cdc_n_read>
+    80080578:	d93d                	beqz	a0,800804ee <usb_serial_poll+0x4e>
+    8008057a:	4681                	li	a3,0
+    8008057c:	50fc                	lw	a5,100(s1)
+    8008057e:	54b8                	lw	a4,104(s1)
+    80080580:	2785                	addiw	a5,a5,1 # 8017001 <_start-0x78068fff>
+    80080582:	1ff7f793          	andi	a5,a5,511
+    80080586:	f6e784e3          	beq	a5,a4,800804ee <usb_serial_poll+0x4e>
+    8008058a:	50f8                	lw	a4,100(s1)
+    8008058c:	00d90633          	add	a2,s2,a3
+    80080590:	00064603          	lbu	a2,0(a2)
+    80080594:	1702                	slli	a4,a4,0x20
+    80080596:	9301                	srli	a4,a4,0x20
+    80080598:	9726                	add	a4,a4,s1
+    8008059a:	0ac70023          	sb	a2,160(a4) # 80170a0 <_start-0x78068f60>
+    8008059e:	0685                	addi	a3,a3,1
+    800805a0:	d0fc                	sw	a5,100(s1)
+    800805a2:	0006879b          	sext.w	a5,a3
+    800805a6:	fca7ebe3          	bltu	a5,a0,8008057c <usb_serial_poll+0xdc>
+    800805aa:	b72d                	j	800804d4 <usb_serial_poll+0x34>
+    800805ac:	50fc                	lw	a5,100(s1)
+    800805ae:	54b8                	lw	a4,104(s1)
+    800805b0:	2007879b          	addiw	a5,a5,512
+    800805b4:	bf15                	j	800804e8 <usb_serial_poll+0x48>
+    800805b6:	58bc                	lw	a5,112(s1)
+    800805b8:	1782                	slli	a5,a5,0x20
+    800805ba:	9381                	srli	a5,a5,0x20
+    800805bc:	97a6                	add	a5,a5,s1
+    800805be:	2a07c703          	lbu	a4,672(a5)
+    800805c2:	00c987b3          	add	a5,s3,a2
+    800805c6:	0605                	addi	a2,a2,1
+    800805c8:	00e78023          	sb	a4,0(a5)
+    800805cc:	58bc                	lw	a5,112(s1)
+    800805ce:	2785                	addiw	a5,a5,1
+    800805d0:	1ff7f793          	andi	a5,a5,511
+    800805d4:	d8bc                	sw	a5,112(s1)
+    800805d6:	f3461ce3          	bne	a2,s4,8008050e <usb_serial_poll+0x6e>
+    800805da:	8952                	mv	s2,s4
+    800805dc:	bf3d                	j	8008051a <usb_serial_poll+0x7a>
+    800805de:	577c                	lw	a5,108(a4)
+    800805e0:	5b38                	lw	a4,112(a4)
+    800805e2:	2007879b          	addiw	a5,a5,512
+    800805e6:	b795                	j	8008054a <usb_serial_poll+0xaa>
+    800805e8:	60a6                	ld	ra,72(sp)
+    800805ea:	6406                	ld	s0,64(sp)
+    800805ec:	74e2                	ld	s1,56(sp)
+    800805ee:	7942                	ld	s2,48(sp)
+    800805f0:	79a2                	ld	s3,40(sp)
+    800805f2:	7a02                	ld	s4,32(sp)
+    800805f4:	6161                	addi	sp,sp,80
+    800805f6:	8082                	ret
+
+00000000800805f8 <usb_serial_write>:
+    800805f8:	7179                	addi	sp,sp,-48
+    800805fa:	ec26                	sd	s1,24(sp)
+    800805fc:	080174b7          	lui	s1,0x8017
+    80080600:	f022                	sd	s0,32(sp)
+    80080602:	f406                	sd	ra,40(sp)
+    80080604:	e84a                	sd	s2,16(sp)
+    80080606:	e44e                	sd	s3,8(sp)
+    80080608:	1800                	addi	s0,sp,48
+    8008060a:	0492                	slli	s1,s1,0x4
+    8008060c:	5cbc                	lw	a5,120(s1)
+    8008060e:	cba1                	beqz	a5,8008065e <usb_serial_write+0x66>
+    80080610:	89aa                	mv	s3,a0
+    80080612:	8526                	mv	a0,s1
+    80080614:	892e                	mv	s2,a1
+    80080616:	d59ff0ef          	jal	8008036e <ctl_invalidate>
+    8008061a:	4681                	li	a3,0
+    8008061c:	00d90b63          	beq	s2,a3,80080632 <usb_serial_write+0x3a>
+    80080620:	54fc                	lw	a5,108(s1)
+    80080622:	58b0                	lw	a2,112(s1)
+    80080624:	0007871b          	sext.w	a4,a5
+    80080628:	2785                	addiw	a5,a5,1
+    8008062a:	1ff7f793          	andi	a5,a5,511
+    8008062e:	00c79c63          	bne	a5,a2,80080646 <usb_serial_write+0x4e>
+    80080632:	7402                	ld	s0,32(sp)
+    80080634:	70a2                	ld	ra,40(sp)
+    80080636:	64e2                	ld	s1,24(sp)
+    80080638:	6942                	ld	s2,16(sp)
+    8008063a:	69a2                	ld	s3,8(sp)
+    8008063c:	08017537          	lui	a0,0x8017
+    80080640:	0512                	slli	a0,a0,0x4
+    80080642:	6145                	addi	sp,sp,48
+    80080644:	bb19                	j	8008035a <ctl_flush>
+    80080646:	00d98633          	add	a2,s3,a3
+    8008064a:	00064603          	lbu	a2,0(a2)
+    8008064e:	1702                	slli	a4,a4,0x20
+    80080650:	9301                	srli	a4,a4,0x20
+    80080652:	9726                	add	a4,a4,s1
+    80080654:	2ac70023          	sb	a2,672(a4)
+    80080658:	d4fc                	sw	a5,108(s1)
+    8008065a:	0685                	addi	a3,a3,1
+    8008065c:	b7c1                	j	8008061c <usb_serial_write+0x24>
+    8008065e:	70a2                	ld	ra,40(sp)
+    80080660:	7402                	ld	s0,32(sp)
+    80080662:	64e2                	ld	s1,24(sp)
+    80080664:	6942                	ld	s2,16(sp)
+    80080666:	69a2                	ld	s3,8(sp)
+    80080668:	6145                	addi	sp,sp,48
+    8008066a:	8082                	ret
+
+000000008008066c <usb_serial_write_cstr>:
+    8008066c:	1101                	addi	sp,sp,-32
+    8008066e:	e822                	sd	s0,16(sp)
+    80080670:	e426                	sd	s1,8(sp)
+    80080672:	ec06                	sd	ra,24(sp)
+    80080674:	1000                	addi	s0,sp,32
+    80080676:	6585                	lui	a1,0x1
+    80080678:	84aa                	mv	s1,a0
+    8008067a:	cbbff0ef          	jal	80080334 <sg2002_strnlen>
+    8008067e:	6442                	ld	s0,16(sp)
+    80080680:	60e2                	ld	ra,24(sp)
+    80080682:	85aa                	mv	a1,a0
+    80080684:	8526                	mv	a0,s1
+    80080686:	64a2                	ld	s1,8(sp)
+    80080688:	6105                	addi	sp,sp,32
+    8008068a:	b7bd                	j	800805f8 <usb_serial_write>
+
+000000008008068c <usb_serial_read>:
+    8008068c:	7179                	addi	sp,sp,-48
+    8008068e:	e84a                	sd	s2,16(sp)
+    80080690:	892a                	mv	s2,a0
+    80080692:	08017537          	lui	a0,0x8017
+    80080696:	f022                	sd	s0,32(sp)
+    80080698:	ec26                	sd	s1,24(sp)
+    8008069a:	e44e                	sd	s3,8(sp)
+    8008069c:	f406                	sd	ra,40(sp)
+    8008069e:	1800                	addi	s0,sp,48
+    800806a0:	0512                	slli	a0,a0,0x4
+    800806a2:	89ae                	mv	s3,a1
+    800806a4:	ccbff0ef          	jal	8008036e <ctl_invalidate>
+    800806a8:	080177b7          	lui	a5,0x8017
+    800806ac:	4481                	li	s1,0
+    800806ae:	0792                	slli	a5,a5,0x4
+    800806b0:	00998663          	beq	s3,s1,800806bc <usb_serial_read+0x30>
+    800806b4:	57b4                	lw	a3,104(a5)
+    800806b6:	53f8                	lw	a4,100(a5)
+    800806b8:	00e69f63          	bne	a3,a4,800806d6 <usb_serial_read+0x4a>
+    800806bc:	08017537          	lui	a0,0x8017
+    800806c0:	0512                	slli	a0,a0,0x4
+    800806c2:	c99ff0ef          	jal	8008035a <ctl_flush>
+    800806c6:	70a2                	ld	ra,40(sp)
+    800806c8:	7402                	ld	s0,32(sp)
+    800806ca:	6942                	ld	s2,16(sp)
+    800806cc:	69a2                	ld	s3,8(sp)
+    800806ce:	8526                	mv	a0,s1
+    800806d0:	64e2                	ld	s1,24(sp)
+    800806d2:	6145                	addi	sp,sp,48
+    800806d4:	8082                	ret
+    800806d6:	57b8                	lw	a4,104(a5)
+    800806d8:	02071693          	slli	a3,a4,0x20
+    800806dc:	9281                	srli	a3,a3,0x20
+    800806de:	96be                	add	a3,a3,a5
+    800806e0:	0a06c603          	lbu	a2,160(a3)
+    800806e4:	2705                	addiw	a4,a4,1
+    800806e6:	009906b3          	add	a3,s2,s1
+    800806ea:	00c68023          	sb	a2,0(a3)
+    800806ee:	1ff77713          	andi	a4,a4,511
+    800806f2:	d7b8                	sw	a4,104(a5)
+    800806f4:	0485                	addi	s1,s1,1 # 8017001 <_start-0x78068fff>
+    800806f6:	bf6d                	j	800806b0 <usb_serial_read+0x24>
+
+00000000800806f8 <console_puts>:
+    800806f8:	1101                	addi	sp,sp,-32
+    800806fa:	e822                	sd	s0,16(sp)
+    800806fc:	e426                	sd	s1,8(sp)
+    800806fe:	ec06                	sd	ra,24(sp)
+    80080700:	1000                	addi	s0,sp,32
+    80080702:	84aa                	mv	s1,a0
+    80080704:	a5dff0ef          	jal	80080160 <uart_puts>
+    80080708:	6442                	ld	s0,16(sp)
+    8008070a:	60e2                	ld	ra,24(sp)
+    8008070c:	8526                	mv	a0,s1
+    8008070e:	64a2                	ld	s1,8(sp)
+    80080710:	6105                	addi	sp,sp,32
+    80080712:	bfa9                	j	8008066c <usb_serial_write_cstr>
+
+0000000080080714 <console_puthex>:
+    80080714:	1101                	addi	sp,sp,-32
+    80080716:	e822                	sd	s0,16(sp)
+    80080718:	1000                	addi	s0,sp,32
+    8008071a:	ec06                	sd	ra,24(sp)
+    8008071c:	fe840793          	addi	a5,s0,-24
+    80080720:	fe040613          	addi	a2,s0,-32
+    80080724:	872a                	mv	a4,a0
+    80080726:	00001597          	auipc	a1,0x1
+    8008072a:	8ea58593          	addi	a1,a1,-1814 # 80081010 <hex.0>
+    8008072e:	00f77693          	andi	a3,a4,15
+    80080732:	96ae                	add	a3,a3,a1
+    80080734:	0006c683          	lbu	a3,0(a3)
+    80080738:	17fd                	addi	a5,a5,-1 # 8016fff <_start-0x78069001>
+    8008073a:	0047571b          	srliw	a4,a4,0x4
+    8008073e:	00d78423          	sb	a3,8(a5)
+    80080742:	fec796e3          	bne	a5,a2,8008072e <console_puthex+0x1a>
+    80080746:	a53ff0ef          	jal	80080198 <uart_puthex>
+    8008074a:	fe840513          	addi	a0,s0,-24
+    8008074e:	45a1                	li	a1,8
+    80080750:	ea9ff0ef          	jal	800805f8 <usb_serial_write>
+    80080754:	60e2                	ld	ra,24(sp)
+    80080756:	6442                	ld	s0,16(sp)
+    80080758:	6105                	addi	sp,sp,32
+    8008075a:	8082                	ret
+
+000000008008075c <console_puthex64>:
+    8008075c:	1101                	addi	sp,sp,-32
+    8008075e:	e822                	sd	s0,16(sp)
+    80080760:	e426                	sd	s1,8(sp)
+    80080762:	ec06                	sd	ra,24(sp)
+    80080764:	1000                	addi	s0,sp,32
+    80080766:	84aa                	mv	s1,a0
+    80080768:	9501                	srai	a0,a0,0x20
+    8008076a:	fabff0ef          	jal	80080714 <console_puthex>
+    8008076e:	6442                	ld	s0,16(sp)
+    80080770:	60e2                	ld	ra,24(sp)
+    80080772:	0004851b          	sext.w	a0,s1
+    80080776:	64a2                	ld	s1,8(sp)
+    80080778:	6105                	addi	sp,sp,32
+    8008077a:	bf69                	j	80080714 <console_puthex>
+
+000000008008077c <tud_mount_cb>:
+    8008077c:	1141                	addi	sp,sp,-16
+    8008077e:	e022                	sd	s0,0(sp)
+    80080780:	e406                	sd	ra,8(sp)
+    80080782:	0800                	addi	s0,sp,16
+    80080784:	6402                	ld	s0,0(sp)
+    80080786:	60a2                	ld	ra,8(sp)
+    80080788:	4581                	li	a1,0
+    8008078a:	450d                	li	a0,3
+    8008078c:	0141                	addi	sp,sp,16
+    8008078e:	b9ad                	j	80080408 <usb_serial_set_state>
+
+0000000080080790 <tud_umount_cb>:
+    80080790:	1141                	addi	sp,sp,-16
+    80080792:	e022                	sd	s0,0(sp)
+    80080794:	e406                	sd	ra,8(sp)
+    80080796:	0800                	addi	s0,sp,16
+    80080798:	6402                	ld	s0,0(sp)
+    8008079a:	60a2                	ld	ra,8(sp)
+    8008079c:	4581                	li	a1,0
+    8008079e:	4509                	li	a0,2
+    800807a0:	0141                	addi	sp,sp,16
+    800807a2:	b19d                	j	80080408 <usb_serial_set_state>
+
+00000000800807a4 <tud_suspend_cb>:
+    800807a4:	1141                	addi	sp,sp,-16
+    800807a6:	e022                	sd	s0,0(sp)
+    800807a8:	e406                	sd	ra,8(sp)
+    800807aa:	0800                	addi	s0,sp,16
+    800807ac:	60a2                	ld	ra,8(sp)
+    800807ae:	6402                	ld	s0,0(sp)
+    800807b0:	0141                	addi	sp,sp,16
+    800807b2:	8082                	ret
+
+00000000800807b4 <tud_resume_cb>:
+    800807b4:	1141                	addi	sp,sp,-16
+    800807b6:	e022                	sd	s0,0(sp)
+    800807b8:	e406                	sd	ra,8(sp)
+    800807ba:	0800                	addi	s0,sp,16
+    800807bc:	60a2                	ld	ra,8(sp)
+    800807be:	6402                	ld	s0,0(sp)
+    800807c0:	0141                	addi	sp,sp,16
+    800807c2:	8082                	ret
+
+00000000800807c4 <tud_cdc_line_state_cb>:
+    800807c4:	1141                	addi	sp,sp,-16
+    800807c6:	e022                	sd	s0,0(sp)
+    800807c8:	e406                	sd	ra,8(sp)
+    800807ca:	0800                	addi	s0,sp,16
+    800807cc:	c599                	beqz	a1,800807da <tud_cdc_line_state_cb+0x16>
+    800807ce:	6402                	ld	s0,0(sp)
+    800807d0:	60a2                	ld	ra,8(sp)
+    800807d2:	4581                	li	a1,0
+    800807d4:	450d                	li	a0,3
+    800807d6:	0141                	addi	sp,sp,16
+    800807d8:	b905                	j	80080408 <usb_serial_set_state>
+    800807da:	60a2                	ld	ra,8(sp)
+    800807dc:	6402                	ld	s0,0(sp)
+    800807de:	0141                	addi	sp,sp,16
+    800807e0:	8082                	ret
+
+00000000800807e2 <tud_cdc_rx_cb>:
+    800807e2:	1141                	addi	sp,sp,-16
+    800807e4:	e022                	sd	s0,0(sp)
+    800807e6:	e406                	sd	ra,8(sp)
+    800807e8:	0800                	addi	s0,sp,16
+    800807ea:	60a2                	ld	ra,8(sp)
+    800807ec:	6402                	ld	s0,0(sp)
+    800807ee:	0141                	addi	sp,sp,16
+    800807f0:	8082                	ret
+
+00000000800807f2 <ascii_to_utf16>:
+    800807f2:	1141                	addi	sp,sp,-16
+    800807f4:	00001717          	auipc	a4,0x1
+    800807f8:	89c70713          	addi	a4,a4,-1892 # 80081090 <s_desc_string>
+    800807fc:	e022                	sd	s0,0(sp)
+    800807fe:	e406                	sd	ra,8(sp)
+    80080800:	0800                	addi	s0,sp,16
+    80080802:	4781                	li	a5,0
+    80080804:	863a                	mv	a2,a4
+    80080806:	02000593          	li	a1,32
+    8008080a:	00f506b3          	add	a3,a0,a5
+    8008080e:	0006c683          	lbu	a3,0(a3)
+    80080812:	e68d                	bnez	a3,8008083c <ascii_to_utf16+0x4a>
+    80080814:	17c2                	slli	a5,a5,0x30
+    80080816:	93c1                	srli	a5,a5,0x30
+    80080818:	2785                	addiw	a5,a5,1
+    8008081a:	60a2                	ld	ra,8(sp)
+    8008081c:	6402                	ld	s0,0(sp)
+    8008081e:	0017979b          	slliw	a5,a5,0x1
+    80080822:	3007e793          	ori	a5,a5,768
+    80080826:	00f61023          	sh	a5,0(a2)
+    8008082a:	00001517          	auipc	a0,0x1
+    8008082e:	86650513          	addi	a0,a0,-1946 # 80081090 <s_desc_string>
+    80080832:	0141                	addi	sp,sp,16
+    80080834:	8082                	ret
+    80080836:	00d71023          	sh	a3,0(a4)
+    8008083a:	bfc1                	j	8008080a <ascii_to_utf16+0x18>
+    8008083c:	0785                	addi	a5,a5,1
+    8008083e:	0709                	addi	a4,a4,2
+    80080840:	feb79be3          	bne	a5,a1,80080836 <ascii_to_utf16+0x44>
+    80080844:	47fd                	li	a5,31
+    80080846:	bfc9                	j	80080818 <ascii_to_utf16+0x26>
+
+0000000080080848 <tud_descriptor_device_cb>:
+    80080848:	1141                	addi	sp,sp,-16
+    8008084a:	e022                	sd	s0,0(sp)
+    8008084c:	e406                	sd	ra,8(sp)
+    8008084e:	0800                	addi	s0,sp,16
+    80080850:	60a2                	ld	ra,8(sp)
+    80080852:	6402                	ld	s0,0(sp)
+    80080854:	00000517          	auipc	a0,0x0
+    80080858:	7d450513          	addi	a0,a0,2004 # 80081028 <s_desc_device>
+    8008085c:	0141                	addi	sp,sp,16
+    8008085e:	8082                	ret
+
+0000000080080860 <tud_descriptor_configuration_cb>:
+    80080860:	1141                	addi	sp,sp,-16
+    80080862:	e022                	sd	s0,0(sp)
+    80080864:	e406                	sd	ra,8(sp)
+    80080866:	0800                	addi	s0,sp,16
+    80080868:	60a2                	ld	ra,8(sp)
+    8008086a:	6402                	ld	s0,0(sp)
+    8008086c:	00000517          	auipc	a0,0x0
+    80080870:	7d450513          	addi	a0,a0,2004 # 80081040 <s_desc_config>
+    80080874:	0141                	addi	sp,sp,16
+    80080876:	8082                	ret
+
+0000000080080878 <tud_descriptor_string_cb>:
+    80080878:	1141                	addi	sp,sp,-16
+    8008087a:	e022                	sd	s0,0(sp)
+    8008087c:	e406                	sd	ra,8(sp)
+    8008087e:	0800                	addi	s0,sp,16
+    80080880:	4789                	li	a5,2
+    80080882:	04f50363          	beq	a0,a5,800808c8 <tud_descriptor_string_cb+0x50>
+    80080886:	02a7e163          	bltu	a5,a0,800808a8 <tud_descriptor_string_cb+0x30>
+    8008088a:	e51d                	bnez	a0,800808b8 <tud_descriptor_string_cb+0x40>
+    8008088c:	60a2                	ld	ra,8(sp)
+    8008088e:	6402                	ld	s0,0(sp)
+    80080890:	040907b7          	lui	a5,0x4090
+    80080894:	00000717          	auipc	a4,0x0
+    80080898:	7fc70713          	addi	a4,a4,2044 # 80081090 <s_desc_string>
+    8008089c:	30478793          	addi	a5,a5,772 # 4090304 <_start-0x7bfefcfc>
+    800808a0:	c31c                	sw	a5,0(a4)
+    800808a2:	853a                	mv	a0,a4
+    800808a4:	0141                	addi	sp,sp,16
+    800808a6:	8082                	ret
+    800808a8:	478d                	li	a5,3
+    800808aa:	02f50463          	beq	a0,a5,800808d2 <tud_descriptor_string_cb+0x5a>
+    800808ae:	00000517          	auipc	a0,0x0
+    800808b2:	74250513          	addi	a0,a0,1858 # 80080ff0 <tinyusb_dwc2_init+0x17c>
+    800808b6:	a029                	j	800808c0 <tud_descriptor_string_cb+0x48>
+    800808b8:	00000517          	auipc	a0,0x0
+    800808bc:	6f850513          	addi	a0,a0,1784 # 80080fb0 <tinyusb_dwc2_init+0x13c>
+    800808c0:	6402                	ld	s0,0(sp)
+    800808c2:	60a2                	ld	ra,8(sp)
+    800808c4:	0141                	addi	sp,sp,16
+    800808c6:	b735                	j	800807f2 <ascii_to_utf16>
+    800808c8:	00000517          	auipc	a0,0x0
+    800808cc:	70050513          	addi	a0,a0,1792 # 80080fc8 <tinyusb_dwc2_init+0x154>
+    800808d0:	bfc5                	j	800808c0 <tud_descriptor_string_cb+0x48>
+    800808d2:	00000517          	auipc	a0,0x0
+    800808d6:	70e50513          	addi	a0,a0,1806 # 80080fe0 <tinyusb_dwc2_init+0x16c>
+    800808da:	b7dd                	j	800808c0 <tud_descriptor_string_cb+0x48>
+
+00000000800808dc <sg2002_usb_board_init>:
+    800808dc:	1141                	addi	sp,sp,-16
+    800808de:	e022                	sd	s0,0(sp)
+    800808e0:	e406                	sd	ra,8(sp)
+    800808e2:	0800                	addi	s0,sp,16
+    800808e4:	030007b7          	lui	a5,0x3000
+    800808e8:	5f98                	lw	a4,56(a5)
+    800808ea:	00176713          	ori	a4,a4,1
+    800808ee:	df98                	sw	a4,56(a5)
+    800808f0:	030007b7          	lui	a5,0x3000
+    800808f4:	47b8                	lw	a4,72(a5)
+    800808f6:	00176713          	ori	a4,a4,1
+    800808fa:	c7b8                	sw	a4,72(a5)
+    800808fc:	47b8                	lw	a4,72(a5)
+    800808fe:	00276713          	ori	a4,a4,2
+    80080902:	c7b8                	sw	a4,72(a5)
+    80080904:	0330000f          	fence	rw,rw
+    80080908:	60a2                	ld	ra,8(sp)
+    8008090a:	6402                	ld	s0,0(sp)
+    8008090c:	0141                	addi	sp,sp,16
+    8008090e:	8082                	ret
+
+0000000080080910 <sg2002_release_worker_core>:
+    80080910:	1141                	addi	sp,sp,-16
+    80080912:	e022                	sd	s0,0(sp)
+    80080914:	e406                	sd	ra,8(sp)
+    80080916:	0800                	addi	s0,sp,16
+    80080918:	030007b7          	lui	a5,0x3000
+    8008091c:	0005071b          	sext.w	a4,a0
+    80080920:	d398                	sw	a4,32(a5)
+    80080922:	9501                	srai	a0,a0,0x20
+    80080924:	d3c8                	sw	a0,36(a5)
+    80080926:	43d8                	lw	a4,4(a5)
+    80080928:	6689                	lui	a3,0x2
+    8008092a:	8f55                	or	a4,a4,a3
+    8008092c:	c3d8                	sw	a4,4(a5)
+    8008092e:	0330000f          	fence	rw,rw
+    80080932:	0000100f          	.insn	4, 0x100f
+    80080936:	60a2                	ld	ra,8(sp)
+    80080938:	6402                	ld	s0,0(sp)
+    8008093a:	4501                	li	a0,0
+    8008093c:	0141                	addi	sp,sp,16
+    8008093e:	8082                	ret
+
+0000000080080940 <sg2002_image_present>:
+    80080940:	1141                	addi	sp,sp,-16
+    80080942:	e022                	sd	s0,0(sp)
+    80080944:	e406                	sd	ra,8(sp)
+    80080946:	0800                	addi	s0,sp,16
+    80080948:	02050613          	addi	a2,a0,32
+    8008094c:	4781                	li	a5,0
+    8008094e:	4701                	li	a4,0
+    80080950:	55fd                	li	a1,-1
+    80080952:	4114                	lw	a3,0(a0)
+    80080954:	0006881b          	sext.w	a6,a3
+    80080958:	c689                	beqz	a3,80080962 <sg2002_image_present+0x22>
+    8008095a:	2705                	addiw	a4,a4,1
+    8008095c:	00b81363          	bne	a6,a1,80080962 <sg2002_image_present+0x22>
+    80080960:	2785                	addiw	a5,a5,1 # 3000001 <_start-0x7d07ffff>
+    80080962:	0511                	addi	a0,a0,4
+    80080964:	fec517e3          	bne	a0,a2,80080952 <sg2002_image_present+0x12>
+    80080968:	4501                	li	a0,0
+    8008096a:	c701                	beqz	a4,80080972 <sg2002_image_present+0x32>
+    8008096c:	17e1                	addi	a5,a5,-8
+    8008096e:	00f03533          	snez	a0,a5
+    80080972:	60a2                	ld	ra,8(sp)
+    80080974:	6402                	ld	s0,0(sp)
+    80080976:	0141                	addi	sp,sp,16
+    80080978:	8082                	ret
+
+000000008008097a <sg2002_copy_image>:
+    8008097a:	7139                	addi	sp,sp,-64
+    8008097c:	f822                	sd	s0,48(sp)
+    8008097e:	f426                	sd	s1,40(sp)
+    80080980:	f04a                	sd	s2,32(sp)
+    80080982:	ec4e                	sd	s3,24(sp)
+    80080984:	e852                	sd	s4,16(sp)
+    80080986:	e456                	sd	s5,8(sp)
+    80080988:	e05a                	sd	s6,0(sp)
+    8008098a:	fc06                	sd	ra,56(sp)
+    8008098c:	0080                	addi	s0,sp,64
+    8008098e:	892a                	mv	s2,a0
+    80080990:	8aae                	mv	s5,a1
+    80080992:	8a32                	mv	s4,a2
+    80080994:	89b6                	mv	s3,a3
+    80080996:	4481                	li	s1,0
+    80080998:	fc050b13          	addi	s6,a0,-64
+    8008099c:	012485b3          	add	a1,s1,s2
+    800809a0:	03449563          	bne	s1,s4,800809ca <sg2002_copy_image+0x50>
+    800809a4:	854a                	mv	a0,s2
+    800809a6:	8b5ff0ef          	jal	8008025a <flush_dcache_range>
+    800809aa:	0000100f          	.insn	4, 0x100f
+    800809ae:	00098463          	beqz	s3,800809b6 <sg2002_copy_image+0x3c>
+    800809b2:	0099b023          	sd	s1,0(s3)
+    800809b6:	70e2                	ld	ra,56(sp)
+    800809b8:	7442                	ld	s0,48(sp)
+    800809ba:	74a2                	ld	s1,40(sp)
+    800809bc:	7902                	ld	s2,32(sp)
+    800809be:	69e2                	ld	s3,24(sp)
+    800809c0:	6a42                	ld	s4,16(sp)
+    800809c2:	6aa2                	ld	s5,8(sp)
+    800809c4:	6b02                	ld	s6,0(sp)
+    800809c6:	6121                	addi	sp,sp,64
+    800809c8:	8082                	ret
+    800809ca:	015487b3          	add	a5,s1,s5
+    800809ce:	0007c783          	lbu	a5,0(a5)
+    800809d2:	0485                	addi	s1,s1,1
+    800809d4:	00f58023          	sb	a5,0(a1)
+    800809d8:	03f4f793          	andi	a5,s1,63
+    800809dc:	f3e1                	bnez	a5,8008099c <sg2002_copy_image+0x22>
+    800809de:	009905b3          	add	a1,s2,s1
+    800809e2:	009b0533          	add	a0,s6,s1
+    800809e6:	875ff0ef          	jal	8008025a <flush_dcache_range>
+    800809ea:	bf4d                	j	8008099c <sg2002_copy_image+0x22>
+
+00000000800809ec <sg2002_boot_8051>:
+    800809ec:	1141                	addi	sp,sp,-16
+    800809ee:	e022                	sd	s0,0(sp)
+    800809f0:	e406                	sd	ra,8(sp)
+    800809f2:	0800                	addi	s0,sp,16
+    800809f4:	5a5a07b7          	lui	a5,0x5a5a0
+    800809f8:	05025737          	lui	a4,0x5025
+    800809fc:	0785                	addi	a5,a5,1 # 5a5a0001 <_start-0x25adffff>
+    800809fe:	d71c                	sw	a5,40(a4)
+    80080a00:	00b55793          	srli	a5,a0,0xb
+    80080a04:	2781                	sext.w	a5,a5
+    80080a06:	d31c                	sw	a5,32(a4)
+    80080a08:	6402                	ld	s0,0(sp)
+    80080a0a:	60a2                	ld	ra,8(sp)
+    80080a0c:	85aa                	mv	a1,a0
+    80080a0e:	02072223          	sw	zero,36(a4) # 5025024 <_start-0x7b05afdc>
+    80080a12:	4505                	li	a0,1
+    80080a14:	d748                	sw	a0,44(a4)
+    80080a16:	2581                	sext.w	a1,a1
+    80080a18:	0141                	addi	sp,sp,16
+    80080a1a:	825ff06f          	j	8008023e <mailbox_send_8051>
+
+0000000080080a1e <kraken_jump_to>:
+    80080a1e:	1141                	addi	sp,sp,-16
+    80080a20:	e022                	sd	s0,0(sp)
+    80080a22:	e406                	sd	ra,8(sp)
+    80080a24:	0800                	addi	s0,sp,16
+    80080a26:	0330000f          	fence	rw,rw
+    80080a2a:	0000100f          	.insn	4, 0x100f
+    80080a2e:	9502                	jalr	a0
+    80080a30:	0001                	nop
+    80080a32:	bffd                	j	80080a30 <kraken_jump_to+0x12>
+
+0000000080080a34 <tusb_init>:
+    80080a34:	00001517          	auipc	a0,0x1
+    80080a38:	8ac54503          	lbu	a0,-1876(a0) # 800812e0 <s_tusb_inited>
+    80080a3c:	e505                	bnez	a0,80080a64 <tusb_init+0x30>
+    80080a3e:	1141                	addi	sp,sp,-16
+    80080a40:	e406                	sd	ra,8(sp)
+    80080a42:	e022                	sd	s0,0(sp)
+    80080a44:	0800                	addi	s0,sp,16
+    80080a46:	110000ef          	jal	80080b56 <tinyusb_cdc_device_init>
+    80080a4a:	4501                	li	a0,0
+    80080a4c:	428000ef          	jal	80080e74 <tinyusb_dwc2_init>
+    80080a50:	3f8000ef          	jal	80080e48 <tinyusb_dwc2_ready>
+    80080a54:	60a2                	ld	ra,8(sp)
+    80080a56:	6402                	ld	s0,0(sp)
+    80080a58:	00001797          	auipc	a5,0x1
+    80080a5c:	88a78423          	sb	a0,-1912(a5) # 800812e0 <s_tusb_inited>
+    80080a60:	0141                	addi	sp,sp,16
+    80080a62:	8082                	ret
+    80080a64:	8082                	ret
+
+0000000080080a66 <tud_inited>:
+    80080a66:	1141                	addi	sp,sp,-16
+    80080a68:	e022                	sd	s0,0(sp)
+    80080a6a:	e406                	sd	ra,8(sp)
+    80080a6c:	0800                	addi	s0,sp,16
+    80080a6e:	60a2                	ld	ra,8(sp)
+    80080a70:	6402                	ld	s0,0(sp)
+    80080a72:	00001517          	auipc	a0,0x1
+    80080a76:	86e54503          	lbu	a0,-1938(a0) # 800812e0 <s_tusb_inited>
+    80080a7a:	0141                	addi	sp,sp,16
+    80080a7c:	8082                	ret
+
+0000000080080a7e <tud_task>:
+    80080a7e:	00001797          	auipc	a5,0x1
+    80080a82:	8627c783          	lbu	a5,-1950(a5) # 800812e0 <s_tusb_inited>
+    80080a86:	cb99                	beqz	a5,80080a9c <tud_task+0x1e>
+    80080a88:	1141                	addi	sp,sp,-16
+    80080a8a:	e022                	sd	s0,0(sp)
+    80080a8c:	e406                	sd	ra,8(sp)
+    80080a8e:	0800                	addi	s0,sp,16
+    80080a90:	3d4000ef          	jal	80080e64 <tinyusb_dwc2_task>
+    80080a94:	6402                	ld	s0,0(sp)
+    80080a96:	60a2                	ld	ra,8(sp)
+    80080a98:	0141                	addi	sp,sp,16
+    80080a9a:	a8e5                	j	80080b92 <tinyusb_cdc_device_task>
+    80080a9c:	8082                	ret
+
+0000000080080a9e <tud_cdc_n_connected>:
+    80080a9e:	1141                	addi	sp,sp,-16
+    80080aa0:	e022                	sd	s0,0(sp)
+    80080aa2:	e406                	sd	ra,8(sp)
+    80080aa4:	0800                	addi	s0,sp,16
+    80080aa6:	6402                	ld	s0,0(sp)
+    80080aa8:	60a2                	ld	ra,8(sp)
+    80080aaa:	0141                	addi	sp,sp,16
+    80080aac:	a8dd                	j	80080ba2 <tinyusb_cdc_connected>
+
+0000000080080aae <tud_cdc_n_available>:
+    80080aae:	1141                	addi	sp,sp,-16
+    80080ab0:	e022                	sd	s0,0(sp)
+    80080ab2:	e406                	sd	ra,8(sp)
+    80080ab4:	0800                	addi	s0,sp,16
+    80080ab6:	6402                	ld	s0,0(sp)
+    80080ab8:	60a2                	ld	ra,8(sp)
+    80080aba:	0141                	addi	sp,sp,16
+    80080abc:	aa19                	j	80080bd2 <tinyusb_cdc_available>
+
+0000000080080abe <tud_cdc_n_read>:
+    80080abe:	1141                	addi	sp,sp,-16
+    80080ac0:	e022                	sd	s0,0(sp)
+    80080ac2:	e406                	sd	ra,8(sp)
+    80080ac4:	0800                	addi	s0,sp,16
+    80080ac6:	6402                	ld	s0,0(sp)
+    80080ac8:	60a2                	ld	ra,8(sp)
+    80080aca:	852e                	mv	a0,a1
+    80080acc:	85b2                	mv	a1,a2
+    80080ace:	0141                	addi	sp,sp,16
+    80080ad0:	aa05                	j	80080c00 <tinyusb_cdc_read>
+
+0000000080080ad2 <tud_cdc_n_write>:
+    80080ad2:	1141                	addi	sp,sp,-16
+    80080ad4:	e022                	sd	s0,0(sp)
+    80080ad6:	e406                	sd	ra,8(sp)
+    80080ad8:	0800                	addi	s0,sp,16
+    80080ada:	6402                	ld	s0,0(sp)
+    80080adc:	60a2                	ld	ra,8(sp)
+    80080ade:	852e                	mv	a0,a1
+    80080ae0:	85b2                	mv	a1,a2
+    80080ae2:	0141                	addi	sp,sp,16
+    80080ae4:	aab5                	j	80080c60 <tinyusb_cdc_write>
+
+0000000080080ae6 <tud_cdc_n_write_flush>:
+    80080ae6:	1141                	addi	sp,sp,-16
+    80080ae8:	e022                	sd	s0,0(sp)
+    80080aea:	e406                	sd	ra,8(sp)
+    80080aec:	0800                	addi	s0,sp,16
+    80080aee:	6402                	ld	s0,0(sp)
+    80080af0:	60a2                	ld	ra,8(sp)
+    80080af2:	0141                	addi	sp,sp,16
+    80080af4:	a2d9                	j	80080cba <tinyusb_cdc_write_flush>
+    80080af6:	1141                	addi	sp,sp,-16
+    80080af8:	e022                	sd	s0,0(sp)
+    80080afa:	e406                	sd	ra,8(sp)
+    80080afc:	0800                	addi	s0,sp,16
+    80080afe:	60a2                	ld	ra,8(sp)
+    80080b00:	6402                	ld	s0,0(sp)
+    80080b02:	0141                	addi	sp,sp,16
+    80080b04:	8082                	ret
+    80080b06:	1141                	addi	sp,sp,-16
+    80080b08:	e022                	sd	s0,0(sp)
+    80080b0a:	e406                	sd	ra,8(sp)
+    80080b0c:	0800                	addi	s0,sp,16
+    80080b0e:	60a2                	ld	ra,8(sp)
+    80080b10:	6402                	ld	s0,0(sp)
+    80080b12:	0141                	addi	sp,sp,16
+    80080b14:	8082                	ret
+    80080b16:	1141                	addi	sp,sp,-16
+    80080b18:	e022                	sd	s0,0(sp)
+    80080b1a:	e406                	sd	ra,8(sp)
+    80080b1c:	0800                	addi	s0,sp,16
+    80080b1e:	60a2                	ld	ra,8(sp)
+    80080b20:	6402                	ld	s0,0(sp)
+    80080b22:	0141                	addi	sp,sp,16
+    80080b24:	8082                	ret
+    80080b26:	1141                	addi	sp,sp,-16
+    80080b28:	e022                	sd	s0,0(sp)
+    80080b2a:	e406                	sd	ra,8(sp)
+    80080b2c:	0800                	addi	s0,sp,16
+    80080b2e:	60a2                	ld	ra,8(sp)
+    80080b30:	6402                	ld	s0,0(sp)
+    80080b32:	0141                	addi	sp,sp,16
+    80080b34:	8082                	ret
+    80080b36:	1141                	addi	sp,sp,-16
+    80080b38:	e022                	sd	s0,0(sp)
+    80080b3a:	e406                	sd	ra,8(sp)
+    80080b3c:	0800                	addi	s0,sp,16
+    80080b3e:	60a2                	ld	ra,8(sp)
+    80080b40:	6402                	ld	s0,0(sp)
+    80080b42:	0141                	addi	sp,sp,16
+    80080b44:	8082                	ret
+    80080b46:	1141                	addi	sp,sp,-16
+    80080b48:	e022                	sd	s0,0(sp)
+    80080b4a:	e406                	sd	ra,8(sp)
+    80080b4c:	0800                	addi	s0,sp,16
+    80080b4e:	60a2                	ld	ra,8(sp)
+    80080b50:	6402                	ld	s0,0(sp)
+    80080b52:	0141                	addi	sp,sp,16
+    80080b54:	8082                	ret
+
+0000000080080b56 <tinyusb_cdc_device_init>:
+    80080b56:	1141                	addi	sp,sp,-16
+    80080b58:	e406                	sd	ra,8(sp)
+    80080b5a:	e022                	sd	s0,0(sp)
+    80080b5c:	10800613          	li	a2,264
+    80080b60:	0800                	addi	s0,sp,16
+    80080b62:	4581                	li	a1,0
+    80080b64:	00000517          	auipc	a0,0x0
+    80080b68:	56c50513          	addi	a0,a0,1388 # 800810d0 <s_rx>
+    80080b6c:	f72ff0ef          	jal	800802de <sg2002_memset>
+    80080b70:	10800613          	li	a2,264
+    80080b74:	4581                	li	a1,0
+    80080b76:	00000517          	auipc	a0,0x0
+    80080b7a:	66250513          	addi	a0,a0,1634 # 800811d8 <s_tx>
+    80080b7e:	f60ff0ef          	jal	800802de <sg2002_memset>
+    80080b82:	60a2                	ld	ra,8(sp)
+    80080b84:	6402                	ld	s0,0(sp)
+    80080b86:	00000797          	auipc	a5,0x0
+    80080b8a:	74078da3          	sb	zero,1883(a5) # 800812e1 <s_connected>
+    80080b8e:	0141                	addi	sp,sp,16
+    80080b90:	8082                	ret
+
+0000000080080b92 <tinyusb_cdc_device_task>:
+    80080b92:	1141                	addi	sp,sp,-16
+    80080b94:	e022                	sd	s0,0(sp)
+    80080b96:	e406                	sd	ra,8(sp)
+    80080b98:	0800                	addi	s0,sp,16
+    80080b9a:	60a2                	ld	ra,8(sp)
+    80080b9c:	6402                	ld	s0,0(sp)
+    80080b9e:	0141                	addi	sp,sp,16
+    80080ba0:	8082                	ret
+
+0000000080080ba2 <tinyusb_cdc_connected>:
+    80080ba2:	1141                	addi	sp,sp,-16
+    80080ba4:	e022                	sd	s0,0(sp)
+    80080ba6:	e406                	sd	ra,8(sp)
+    80080ba8:	0800                	addi	s0,sp,16
+    80080baa:	60a2                	ld	ra,8(sp)
+    80080bac:	6402                	ld	s0,0(sp)
+    80080bae:	00000517          	auipc	a0,0x0
+    80080bb2:	73354503          	lbu	a0,1843(a0) # 800812e1 <s_connected>
+    80080bb6:	0141                	addi	sp,sp,16
+    80080bb8:	8082                	ret
+
+0000000080080bba <tinyusb_cdc_set_connected>:
+    80080bba:	1141                	addi	sp,sp,-16
+    80080bbc:	e022                	sd	s0,0(sp)
+    80080bbe:	e406                	sd	ra,8(sp)
+    80080bc0:	0800                	addi	s0,sp,16
+    80080bc2:	60a2                	ld	ra,8(sp)
+    80080bc4:	6402                	ld	s0,0(sp)
+    80080bc6:	00000797          	auipc	a5,0x0
+    80080bca:	70a78da3          	sb	a0,1819(a5) # 800812e1 <s_connected>
+    80080bce:	0141                	addi	sp,sp,16
+    80080bd0:	8082                	ret
+
+0000000080080bd2 <tinyusb_cdc_available>:
+    80080bd2:	1141                	addi	sp,sp,-16
+    80080bd4:	e022                	sd	s0,0(sp)
+    80080bd6:	e406                	sd	ra,8(sp)
+    80080bd8:	0800                	addi	s0,sp,16
+    80080bda:	00000797          	auipc	a5,0x0
+    80080bde:	5f67a783          	lw	a5,1526(a5) # 800811d0 <s_rx+0x100>
+    80080be2:	00000517          	auipc	a0,0x0
+    80080be6:	5f252503          	lw	a0,1522(a0) # 800811d4 <s_rx+0x104>
+    80080bea:	00a7e863          	bltu	a5,a0,80080bfa <tinyusb_cdc_available+0x28>
+    80080bee:	60a2                	ld	ra,8(sp)
+    80080bf0:	6402                	ld	s0,0(sp)
+    80080bf2:	40a7853b          	subw	a0,a5,a0
+    80080bf6:	0141                	addi	sp,sp,16
+    80080bf8:	8082                	ret
+    80080bfa:	1007879b          	addiw	a5,a5,256
+    80080bfe:	bfc5                	j	80080bee <tinyusb_cdc_available+0x1c>
+
+0000000080080c00 <tinyusb_cdc_read>:
+    80080c00:	1141                	addi	sp,sp,-16
+    80080c02:	e022                	sd	s0,0(sp)
+    80080c04:	e406                	sd	ra,8(sp)
+    80080c06:	0800                	addi	s0,sp,16
+    80080c08:	86aa                	mv	a3,a0
+    80080c0a:	4701                	li	a4,0
+    80080c0c:	00000617          	auipc	a2,0x0
+    80080c10:	4c460613          	addi	a2,a2,1220 # 800810d0 <s_rx>
+    80080c14:	0007051b          	sext.w	a0,a4
+    80080c18:	00b57c63          	bgeu	a0,a1,80080c30 <tinyusb_cdc_read+0x30>
+    80080c1c:	00000797          	auipc	a5,0x0
+    80080c20:	5b87a783          	lw	a5,1464(a5) # 800811d4 <s_rx+0x104>
+    80080c24:	00000817          	auipc	a6,0x0
+    80080c28:	5ac82803          	lw	a6,1452(a6) # 800811d0 <s_rx+0x100>
+    80080c2c:	00f81663          	bne	a6,a5,80080c38 <tinyusb_cdc_read+0x38>
+    80080c30:	60a2                	ld	ra,8(sp)
+    80080c32:	6402                	ld	s0,0(sp)
+    80080c34:	0141                	addi	sp,sp,16
+    80080c36:	8082                	ret
+    80080c38:	1782                	slli	a5,a5,0x20
+    80080c3a:	9381                	srli	a5,a5,0x20
+    80080c3c:	97b2                	add	a5,a5,a2
+    80080c3e:	0007c503          	lbu	a0,0(a5)
+    80080c42:	00e687b3          	add	a5,a3,a4
+    80080c46:	0705                	addi	a4,a4,1
+    80080c48:	00a78023          	sb	a0,0(a5)
+    80080c4c:	00000797          	auipc	a5,0x0
+    80080c50:	5887a783          	lw	a5,1416(a5) # 800811d4 <s_rx+0x104>
+    80080c54:	2785                	addiw	a5,a5,1
+    80080c56:	0ff7f793          	zext.b	a5,a5
+    80080c5a:	10f62223          	sw	a5,260(a2)
+    80080c5e:	bf5d                	j	80080c14 <tinyusb_cdc_read+0x14>
+
+0000000080080c60 <tinyusb_cdc_write>:
+    80080c60:	1141                	addi	sp,sp,-16
+    80080c62:	e022                	sd	s0,0(sp)
+    80080c64:	e406                	sd	ra,8(sp)
+    80080c66:	0800                	addi	s0,sp,16
+    80080c68:	00000897          	auipc	a7,0x0
+    80080c6c:	6748a883          	lw	a7,1652(a7) # 800812dc <s_tx+0x104>
+    80080c70:	862a                	mv	a2,a0
+    80080c72:	4701                	li	a4,0
+    80080c74:	00000817          	auipc	a6,0x0
+    80080c78:	45c80813          	addi	a6,a6,1116 # 800810d0 <s_rx>
+    80080c7c:	0007051b          	sext.w	a0,a4
+    80080c80:	00b56663          	bltu	a0,a1,80080c8c <tinyusb_cdc_write+0x2c>
+    80080c84:	60a2                	ld	ra,8(sp)
+    80080c86:	6402                	ld	s0,0(sp)
+    80080c88:	0141                	addi	sp,sp,16
+    80080c8a:	8082                	ret
+    80080c8c:	00000797          	auipc	a5,0x0
+    80080c90:	64c7a783          	lw	a5,1612(a5) # 800812d8 <s_tx+0x100>
+    80080c94:	0017869b          	addiw	a3,a5,1
+    80080c98:	0ff6f693          	zext.b	a3,a3
+    80080c9c:	fed884e3          	beq	a7,a3,80080c84 <tinyusb_cdc_write+0x24>
+    80080ca0:	00e60533          	add	a0,a2,a4
+    80080ca4:	00054503          	lbu	a0,0(a0)
+    80080ca8:	1782                	slli	a5,a5,0x20
+    80080caa:	9381                	srli	a5,a5,0x20
+    80080cac:	97c2                	add	a5,a5,a6
+    80080cae:	10a78423          	sb	a0,264(a5)
+    80080cb2:	20d82423          	sw	a3,520(a6)
+    80080cb6:	0705                	addi	a4,a4,1
+    80080cb8:	b7d1                	j	80080c7c <tinyusb_cdc_write+0x1c>
+
+0000000080080cba <tinyusb_cdc_write_flush>:
+    80080cba:	1141                	addi	sp,sp,-16
+    80080cbc:	e022                	sd	s0,0(sp)
+    80080cbe:	e406                	sd	ra,8(sp)
+    80080cc0:	0800                	addi	s0,sp,16
+    80080cc2:	60a2                	ld	ra,8(sp)
+    80080cc4:	6402                	ld	s0,0(sp)
+    80080cc6:	0141                	addi	sp,sp,16
+    80080cc8:	8082                	ret
+
+0000000080080cca <tinyusb_cdc_rx_feed>:
+    80080cca:	1141                	addi	sp,sp,-16
+    80080ccc:	e022                	sd	s0,0(sp)
+    80080cce:	e406                	sd	ra,8(sp)
+    80080cd0:	0800                	addi	s0,sp,16
+    80080cd2:	00000817          	auipc	a6,0x0
+    80080cd6:	50282803          	lw	a6,1282(a6) # 800811d4 <s_rx+0x104>
+    80080cda:	4701                	li	a4,0
+    80080cdc:	00000617          	auipc	a2,0x0
+    80080ce0:	3f460613          	addi	a2,a2,1012 # 800810d0 <s_rx>
+    80080ce4:	0007079b          	sext.w	a5,a4
+    80080ce8:	00b7e663          	bltu	a5,a1,80080cf4 <tinyusb_cdc_rx_feed+0x2a>
+    80080cec:	60a2                	ld	ra,8(sp)
+    80080cee:	6402                	ld	s0,0(sp)
+    80080cf0:	0141                	addi	sp,sp,16
+    80080cf2:	8082                	ret
+    80080cf4:	00000797          	auipc	a5,0x0
+    80080cf8:	4dc7a783          	lw	a5,1244(a5) # 800811d0 <s_rx+0x100>
+    80080cfc:	0017869b          	addiw	a3,a5,1
+    80080d00:	0ff6f693          	zext.b	a3,a3
+    80080d04:	fed804e3          	beq	a6,a3,80080cec <tinyusb_cdc_rx_feed+0x22>
+    80080d08:	00e508b3          	add	a7,a0,a4
+    80080d0c:	0008c883          	lbu	a7,0(a7)
+    80080d10:	1782                	slli	a5,a5,0x20
+    80080d12:	9381                	srli	a5,a5,0x20
+    80080d14:	97b2                	add	a5,a5,a2
+    80080d16:	01178023          	sb	a7,0(a5)
+    80080d1a:	10d62023          	sw	a3,256(a2)
+    80080d1e:	0705                	addi	a4,a4,1
+    80080d20:	b7d1                	j	80080ce4 <tinyusb_cdc_rx_feed+0x1a>
+
+0000000080080d22 <tinyusb_cdc_tx_take>:
+    80080d22:	1141                	addi	sp,sp,-16
+    80080d24:	e022                	sd	s0,0(sp)
+    80080d26:	e406                	sd	ra,8(sp)
+    80080d28:	0800                	addi	s0,sp,16
+    80080d2a:	86aa                	mv	a3,a0
+    80080d2c:	4701                	li	a4,0
+    80080d2e:	00000617          	auipc	a2,0x0
+    80080d32:	3a260613          	addi	a2,a2,930 # 800810d0 <s_rx>
+    80080d36:	0007051b          	sext.w	a0,a4
+    80080d3a:	00b57c63          	bgeu	a0,a1,80080d52 <tinyusb_cdc_tx_take+0x30>
+    80080d3e:	00000797          	auipc	a5,0x0
+    80080d42:	59e7a783          	lw	a5,1438(a5) # 800812dc <s_tx+0x104>
+    80080d46:	00000817          	auipc	a6,0x0
+    80080d4a:	59282803          	lw	a6,1426(a6) # 800812d8 <s_tx+0x100>
+    80080d4e:	00f81663          	bne	a6,a5,80080d5a <tinyusb_cdc_tx_take+0x38>
+    80080d52:	60a2                	ld	ra,8(sp)
+    80080d54:	6402                	ld	s0,0(sp)
+    80080d56:	0141                	addi	sp,sp,16
+    80080d58:	8082                	ret
+    80080d5a:	1782                	slli	a5,a5,0x20
+    80080d5c:	9381                	srli	a5,a5,0x20
+    80080d5e:	97b2                	add	a5,a5,a2
+    80080d60:	1087c503          	lbu	a0,264(a5)
+    80080d64:	00e687b3          	add	a5,a3,a4
+    80080d68:	0705                	addi	a4,a4,1
+    80080d6a:	00a78023          	sb	a0,0(a5)
+    80080d6e:	00000797          	auipc	a5,0x0
+    80080d72:	56e7a783          	lw	a5,1390(a5) # 800812dc <s_tx+0x104>
+    80080d76:	2785                	addiw	a5,a5,1
+    80080d78:	0ff7f793          	zext.b	a5,a5
+    80080d7c:	20f62623          	sw	a5,524(a2)
+    80080d80:	bf5d                	j	80080d36 <tinyusb_cdc_tx_take+0x14>
+
+0000000080080d82 <dcd_int_handler>:
+    80080d82:	1101                	addi	sp,sp,-32
+    80080d84:	e822                	sd	s0,16(sp)
+    80080d86:	e426                	sd	s1,8(sp)
+    80080d88:	043407b7          	lui	a5,0x4340
+    80080d8c:	ec06                	sd	ra,24(sp)
+    80080d8e:	1000                	addi	s0,sp,32
+    80080d90:	4bc4                	lw	s1,20(a5)
+    80080d92:	4f98                	lw	a4,24(a5)
+    80080d94:	8cf9                	and	s1,s1,a4
+    80080d96:	c4c5                	beqz	s1,80080e3e <dcd_int_handler+0xbc>
+    80080d98:	03349713          	slli	a4,s1,0x33
+    80080d9c:	02075163          	bgez	a4,80080dbe <dcd_int_handler+0x3c>
+    80080da0:	6705                	lui	a4,0x1
+    80080da2:	cbd8                	sw	a4,20(a5)
+    80080da4:	4501                	li	a0,0
+    80080da6:	00000797          	auipc	a5,0x0
+    80080daa:	540781a3          	sb	zero,1347(a5) # 800812e9 <s_dwc2+0x1>
+    80080dae:	00000797          	auipc	a5,0x0
+    80080db2:	52078e23          	sb	zero,1340(a5) # 800812ea <s_dwc2+0x2>
+    80080db6:	e05ff0ef          	jal	80080bba <tinyusb_cdc_set_connected>
+    80080dba:	9d7ff0ef          	jal	80080790 <tud_umount_cb>
+    80080dbe:	03249793          	slli	a5,s1,0x32
+    80080dc2:	0007d663          	bgez	a5,80080dce <dcd_int_handler+0x4c>
+    80080dc6:	6709                	lui	a4,0x2
+    80080dc8:	043407b7          	lui	a5,0x4340
+    80080dcc:	cbd8                	sw	a4,20(a5)
+    80080dce:	03449793          	slli	a5,s1,0x34
+    80080dd2:	0207d063          	bgez	a5,80080df2 <dcd_int_handler+0x70>
+    80080dd6:	6785                	lui	a5,0x1
+    80080dd8:	80078793          	addi	a5,a5,-2048 # 800 <_start-0x8007f800>
+    80080ddc:	04340737          	lui	a4,0x4340
+    80080de0:	cb5c                	sw	a5,20(a4)
+    80080de2:	4501                	li	a0,0
+    80080de4:	4785                	li	a5,1
+    80080de6:	00000717          	auipc	a4,0x0
+    80080dea:	50f70223          	sb	a5,1284(a4) # 800812ea <s_dwc2+0x2>
+    80080dee:	9b7ff0ef          	jal	800807a4 <tud_suspend_cb>
+    80080df2:	0004dd63          	bgez	s1,80080e0c <dcd_int_handler+0x8a>
+    80080df6:	043407b7          	lui	a5,0x4340
+    80080dfa:	80000737          	lui	a4,0x80000
+    80080dfe:	cbd8                	sw	a4,20(a5)
+    80080e00:	00000797          	auipc	a5,0x0
+    80080e04:	4e078523          	sb	zero,1258(a5) # 800812ea <s_dwc2+0x2>
+    80080e08:	9adff0ef          	jal	800807b4 <tud_resume_cb>
+    80080e0c:	0104f793          	andi	a5,s1,16
+    80080e10:	c789                	beqz	a5,80080e1a <dcd_int_handler+0x98>
+    80080e12:	043407b7          	lui	a5,0x4340
+    80080e16:	4741                	li	a4,16
+    80080e18:	cbd8                	sw	a4,20(a5)
+    80080e1a:	02d49793          	slli	a5,s1,0x2d
+    80080e1e:	0007d763          	bgez	a5,80080e2c <dcd_int_handler+0xaa>
+    80080e22:	00040737          	lui	a4,0x40
+    80080e26:	043407b7          	lui	a5,0x4340
+    80080e2a:	cbd8                	sw	a4,20(a5)
+    80080e2c:	02c49793          	slli	a5,s1,0x2c
+    80080e30:	0007d763          	bgez	a5,80080e3e <dcd_int_handler+0xbc>
+    80080e34:	00080737          	lui	a4,0x80
+    80080e38:	043407b7          	lui	a5,0x4340
+    80080e3c:	cbd8                	sw	a4,20(a5)
+    80080e3e:	60e2                	ld	ra,24(sp)
+    80080e40:	6442                	ld	s0,16(sp)
+    80080e42:	64a2                	ld	s1,8(sp)
+    80080e44:	6105                	addi	sp,sp,32
+    80080e46:	8082                	ret
+
+0000000080080e48 <tinyusb_dwc2_ready>:
+    80080e48:	1141                	addi	sp,sp,-16
+    80080e4a:	e022                	sd	s0,0(sp)
+    80080e4c:	e406                	sd	ra,8(sp)
+    80080e4e:	0800                	addi	s0,sp,16
+    80080e50:	00000517          	auipc	a0,0x0
+    80080e54:	49b54503          	lbu	a0,1179(a0) # 800812eb <s_dwc2+0x3>
+    80080e58:	60a2                	ld	ra,8(sp)
+    80080e5a:	6402                	ld	s0,0(sp)
+    80080e5c:	00a03533          	snez	a0,a0
+    80080e60:	0141                	addi	sp,sp,16
+    80080e62:	8082                	ret
+
+0000000080080e64 <tinyusb_dwc2_task>:
+    80080e64:	1141                	addi	sp,sp,-16
+    80080e66:	e022                	sd	s0,0(sp)
+    80080e68:	e406                	sd	ra,8(sp)
+    80080e6a:	0800                	addi	s0,sp,16
+    80080e6c:	60a2                	ld	ra,8(sp)
+    80080e6e:	6402                	ld	s0,0(sp)
+    80080e70:	0141                	addi	sp,sp,16
+    80080e72:	8082                	ret
+
+0000000080080e74 <tinyusb_dwc2_init>:
+    80080e74:	1101                	addi	sp,sp,-32
+    80080e76:	e822                	sd	s0,16(sp)
+    80080e78:	e426                	sd	s1,8(sp)
+    80080e7a:	ec06                	sd	ra,24(sp)
+    80080e7c:	1000                	addi	s0,sp,32
+    80080e7e:	00000497          	auipc	s1,0x0
+    80080e82:	46a48493          	addi	s1,s1,1130 # 800812e8 <s_dwc2>
+    80080e86:	00a48023          	sb	a0,0(s1)
+    80080e8a:	a53ff0ef          	jal	800808dc <sg2002_usb_board_init>
+    80080e8e:	043407b7          	lui	a5,0x4340
+    80080e92:	0007a423          	sw	zero,8(a5) # 4340008 <_start-0x7bd3fff8>
+    80080e96:	47d8                	lw	a4,12(a5)
+    80080e98:	04076713          	ori	a4,a4,64
+    80080e9c:	c7d8                	sw	a4,12(a5)
+    80080e9e:	4b98                	lw	a4,16(a5)
+    80080ea0:	00176713          	ori	a4,a4,1
+    80080ea4:	cb98                	sw	a4,16(a5)
+    80080ea6:	0007a737          	lui	a4,0x7a
+    80080eaa:	12070713          	addi	a4,a4,288 # 7a120 <_start-0x80005ee0>
+    80080eae:	4b94                	lw	a3,16(a5)
+    80080eb0:	8a85                	andi	a3,a3,1
+    80080eb2:	c681                	beqz	a3,80080eba <tinyusb_dwc2_init+0x46>
+    80080eb4:	0001                	nop
+    80080eb6:	377d                	addiw	a4,a4,-1
+    80080eb8:	fb7d                	bnez	a4,80080eae <tinyusb_dwc2_init+0x3a>
+    80080eba:	043407b7          	lui	a5,0x4340
+    80080ebe:	38078713          	addi	a4,a5,896 # 4340380 <_start-0x7bd3fc80>
+    80080ec2:	468d                	li	a3,3
+    80080ec4:	cf34                	sw	a3,88(a4)
+    80080ec6:	10000713          	li	a4,256
+    80080eca:	d3d8                	sw	a4,36(a5)
+    80080ecc:	00400737          	lui	a4,0x400
+    80080ed0:	10070713          	addi	a4,a4,256 # 400100 <_start-0x7fc7ff00>
+    80080ed4:	004006b7          	lui	a3,0x400
+    80080ed8:	d798                	sw	a4,40(a5)
+    80080eda:	14068693          	addi	a3,a3,320 # 400140 <_start-0x7fc7fec0>
+    80080ede:	10078713          	addi	a4,a5,256
+    80080ee2:	c754                	sw	a3,12(a4)
+    80080ee4:	577d                	li	a4,-1
+    80080ee6:	cbd8                	sw	a4,20(a5)
+    80080ee8:	800c4737          	lui	a4,0x800c4
+    80080eec:	81070713          	addi	a4,a4,-2032 # ffffffff800c3810 <__stack_top+0xffffffff00040530>
+    80080ef0:	cf98                	sw	a4,24(a5)
+    80080ef2:	4798                	lw	a4,8(a5)
+    80080ef4:	00176713          	ori	a4,a4,1
+    80080ef8:	c798                	sw	a4,8(a5)
+    80080efa:	4785                	li	a5,1
+    80080efc:	00f481a3          	sb	a5,3(s1)
+    80080f00:	60e2                	ld	ra,24(sp)
+    80080f02:	6442                	ld	s0,16(sp)
+    80080f04:	64a2                	ld	s1,8(sp)
+    80080f06:	6105                	addi	sp,sp,32
+    80080f08:	8082                	ret
+    80080f0a:	0000                	unimp
+    80080f0c:	0000                	unimp
+    80080f0e:	0000                	unimp
+    80080f10:	6b61724b          	.insn	4, 0x6b61724b
+    80080f14:	6e65                	lui	t3,0x19
+    80080f16:	6220                	ld	s0,64(a2)
+    80080f18:	6c746f6f          	jal	t5,800c7dde <__stack_top+0x44afe>
+    80080f1c:	6564616f          	jal	sp,800c7572 <__stack_top+0x44292>
+    80080f20:	2072                	.insn	2, 0x2072
+    80080f22:	72617473          	.insn	4, 0x72617473
+    80080f26:	0a74                	addi	a3,sp,284
+	...
+    80080f30:	6f6f625b          	.insn	4, 0x6f6f625b
+    80080f34:	5d74                	lw	a3,124(a0)
+    80080f36:	6b20                	ld	s0,80(a4)
+    80080f38:	7265                	lui	tp,0xffff9
+    80080f3a:	656e                	ld	a0,216(sp)
+    80080f3c:	206c                	.insn	2, 0x206c
+    80080f3e:	2040                	.insn	2, 0x2040
+    80080f40:	7830                	ld	a2,112(s0)
+    80080f42:	0000                	unimp
+    80080f44:	0000                	unimp
+    80080f46:	0000                	unimp
+    80080f48:	000a                	c.slli	zero,0x2
+    80080f4a:	0000                	unimp
+    80080f4c:	0000                	unimp
+    80080f4e:	0000                	unimp
+    80080f50:	6f6f625b          	.insn	4, 0x6f6f625b
+    80080f54:	5d74                	lw	a3,124(a0)
+    80080f56:	7720                	ld	s0,104(a4)
+    80080f58:	656b726f          	jal	tp,801385ae <__stack_top+0xb52ce>
+    80080f5c:	2072                	.insn	2, 0x2072
+    80080f5e:	2040                	.insn	2, 0x2040
+    80080f60:	7830                	ld	a2,112(s0)
+    80080f62:	0000                	unimp
+    80080f64:	0000                	unimp
+    80080f66:	0000                	unimp
+    80080f68:	6f6f625b          	.insn	4, 0x6f6f625b
+    80080f6c:	5d74                	lw	a3,124(a0)
+    80080f6e:	7020                	ld	s0,96(s0)
+    80080f70:	6e61                	lui	t3,0x18
+    80080f72:	6369                	lui	t1,0x1a
+    80080f74:	000a                	c.slli	zero,0x2
+    80080f76:	0000                	unimp
+    80080f78:	6f6f625b          	.insn	4, 0x6f6f625b
+    80080f7c:	5d74                	lw	a3,124(a0)
+    80080f7e:	7320                	ld	s0,96(a4)
+    80080f80:	6174                	ld	a3,192(a0)
+    80080f82:	7472                	ld	s0,312(sp)
+    80080f84:	6e69                	lui	t3,0x1a
+    80080f86:	30382067          	.insn	4, 0x30382067
+    80080f8a:	3135                	addiw	sp,sp,-19
+    80080f8c:	7720                	ld	s0,104(a4)
+    80080f8e:	7461                	lui	s0,0xffff8
+    80080f90:	6f646863          	bltu	s0,s6,80081680 <s_dwc2+0x398>
+    80080f94:	00000a67          	jalr	s4,zero # 0 <_start-0x80080000>
+    80080f98:	6f6f625b          	.insn	4, 0x6f6f625b
+    80080f9c:	5d74                	lw	a3,124(a0)
+    80080f9e:	6820                	ld	s0,80(s0)
+    80080fa0:	6e61                	lui	t3,0x18
+    80080fa2:	6f64                	ld	s1,216(a4)
+    80080fa4:	6666                	ld	a2,88(sp)
+    80080fa6:	6b20                	ld	s0,80(a4)
+    80080fa8:	7265                	lui	tp,0xffff9
+    80080faa:	656e                	ld	a0,216(sp)
+    80080fac:	0a6c                	addi	a1,sp,284
+    80080fae:	0000                	unimp
+    80080fb0:	694e                	ld	s2,208(sp)
+    80080fb2:	20746867          	.insn	4, 0x20746867
+    80080fb6:	7254                	ld	a3,160(a2)
+    80080fb8:	6461                	lui	s0,0x18
+    80080fba:	7265                	lui	tp,0xffff9
+    80080fbc:	65442073          	.insn	4, 0x65442073
+    80080fc0:	0076                	c.slli	zero,0x1d
+    80080fc2:	0000                	unimp
+    80080fc4:	0000                	unimp
+    80080fc6:	0000                	unimp
+    80080fc8:	6b61724b          	.insn	4, 0x6b61724b
+    80080fcc:	6e65                	lui	t3,0x19
+    80080fce:	5520                	lw	s0,104(a0)
+    80080fd0:	43204253          	.insn	4, 0x43204253
+    80080fd4:	6f736e6f          	jal	t3,800b7eca <__stack_top+0x34bea>
+    80080fd8:	656c                	ld	a1,200(a0)
+    80080fda:	0000                	unimp
+    80080fdc:	0000                	unimp
+    80080fde:	0000                	unimp
+    80080fe0:	30324753          	.insn	4, 0x30324753
+    80080fe4:	3230                	.insn	2, 0x3230
+    80080fe6:	432d                	li	t1,11
+    80080fe8:	4344                	lw	s1,4(a4)
+    80080fea:	302d                	.insn	2, 0x302d
+    80080fec:	3030                	.insn	2, 0x3030
+    80080fee:	0031                	c.nop	12
+    80080ff0:	6b61724b          	.insn	4, 0x6b61724b
+    80080ff4:	6e65                	lui	t3,0x19
+	...
+
+0000000080080ff8 <hex.0>:
+    80080ff8:	3130                	.insn	2, 0x3130
+    80080ffa:	3332                	.insn	2, 0x3332
+    80080ffc:	3534                	.insn	2, 0x3534
+    80080ffe:	3736                	.insn	2, 0x3736
+    80081000:	3938                	.insn	2, 0x3938
+    80081002:	6261                	lui	tp,0x18
+    80081004:	66656463          	bltu	a0,t1,8008166c <s_dwc2+0x384>
+	...
+
+0000000080081010 <hex.0>:
+    80081010:	3130                	.insn	2, 0x3130
+    80081012:	3332                	.insn	2, 0x3332
+    80081014:	3534                	.insn	2, 0x3534
+    80081016:	3736                	.insn	2, 0x3736
+    80081018:	3938                	.insn	2, 0x3938
+    8008101a:	6261                	lui	tp,0x18
+    8008101c:	66656463          	bltu	a0,t1,80081684 <s_dwc2+0x39c>
+	...
+
+0000000080081028 <s_desc_device>:
+    80081028:	0112                	slli	sp,sp,0x4
+    8008102a:	0200                	addi	s0,sp,256
+    8008102c:	400102ef          	jal	t0,8009142c <__stack_top+0xe14c>
+    80081030:	30b1                	addiw	ra,ra,-20
+    80081032:	01001003          	lh	zero,16(zero) # 10 <_start-0x8007fff0>
+    80081036:	0201                	addi	tp,tp,0 # 18000 <_start-0x80068000>
+    80081038:	00000103          	lb	sp,0(zero) # 0 <_start-0x80080000>
+    8008103c:	0000                	unimp
+	...
+
+0000000080081040 <s_desc_config>:
+    80081040:	0209                	addi	tp,tp,2 # 2 <_start-0x8007fffe>
+    80081042:	01020043          	.insn	4, 0x01020043
+    80081046:	8000                	.insn	2, 0x8000
+    80081048:	0832                	slli	a6,a6,0xc
+    8008104a:	0202000b          	.insn	4, 0x0202000b
+    8008104e:	0102                	c.slli64	sp
+    80081050:	0900                	addi	s0,sp,144
+    80081052:	0004                	.insn	2, 0x0004
+    80081054:	0100                	addi	s0,sp,128
+    80081056:	0202                	c.slli64	tp
+    80081058:	0001                	nop
+    8008105a:	2405                	addiw	s0,s0,1 # 18001 <_start-0x80067fff>
+    8008105c:	1000                	addi	s0,sp,32
+    8008105e:	0401                	addi	s0,s0,0
+    80081060:	0224                	addi	s1,sp,264
+    80081062:	0502                	c.slli64	a0
+    80081064:	0624                	addi	s1,sp,776
+    80081066:	0100                	addi	s0,sp,128
+    80081068:	2405                	addiw	s0,s0,1
+    8008106a:	0301                	addi	t1,t1,0 # 1a000 <_start-0x80066000>
+    8008106c:	0701                	addi	a4,a4,0
+    8008106e:	8105                	srli	a0,a0,0x1
+    80081070:	10000803          	lb	a6,256(zero) # 100 <_start-0x8007ff00>
+    80081074:	0409                	addi	s0,s0,2
+    80081076:	0001                	nop
+    80081078:	0a02                	c.slli64	s4
+    8008107a:	0000                	unimp
+    8008107c:	0700                	addi	s0,sp,896
+    8008107e:	0205                	addi	tp,tp,1 # 1 <_start-0x8007ffff>
+    80081080:	4002                	.insn	2, 0x4002
+    80081082:	0000                	unimp
+    80081084:	02820507          	.insn	4, 0x02820507
+    80081088:	0040                	addi	s0,sp,4
+	...
+
+Disassembly of section .riscv.attributes:
+
+0000000000000000 <.riscv.attributes>:
+   0:	4641                	li	a2,16
+   2:	0000                	unimp
+   4:	7200                	ld	s0,32(a2)
+   6:	7369                	lui	t1,0xffffa
+   8:	01007663          	bgeu	zero,a6,14 <_start-0x8007ffec>
+   c:	003c                	addi	a5,sp,8
+   e:	0000                	unimp
+  10:	1004                	addi	s1,sp,32
+  12:	7205                	lui	tp,0xfffe1
+  14:	3676                	.insn	2, 0x3676
+  16:	6934                	ld	a3,80(a0)
+  18:	7032                	.insn	2, 0x7032
+  1a:	5f31                	li	t5,-20
+  1c:	326d                	addiw	tp,tp,-5 # fffffffffffe0ffb <__stack_top+0xffffffff7ff5dd1b>
+  1e:	3070                	.insn	2, 0x3070
+  20:	615f 7032 5f31      	.insn	6, 0x5f317032615f
+  26:	30703263          	.insn	4, 0x30703263
+  2a:	7a5f 6d6d 6c75      	.insn	6, 0x6c756d6d7a5f
+  30:	7031                	c.lui	zero,0xfffec
+  32:	5f30                	lw	a2,120(a4)
+  34:	617a                	ld	sp,408(sp)
+  36:	6d61                	lui	s10,0x18
+  38:	3070316f          	jal	sp,3b3e <_start-0x8007c4c2>
+  3c:	7a5f 6c61 7372      	.insn	6, 0x73726c617a5f
+  42:	30703163          	.insn	4, 0x30703163
+	...
+
+Disassembly of section .comment:
+
+0000000000000000 <.comment>:
+   0:	3a434347          	.insn	4, 0x3a434347
+   4:	2820                	.insn	2, 0x2820
+   6:	3431                	addiw	s0,s0,-20
+   8:	322e                	.insn	2, 0x322e
+   a:	302e                	.insn	2, 0x302e
+   c:	2939312b          	.insn	4, 0x2939312b
+  10:	3120                	.insn	2, 0x3120
+  12:	2e34                	.insn	2, 0x2e34
+  14:	2e32                	.insn	2, 0x2e32
+  16:	0030                	addi	a2,sp,8
