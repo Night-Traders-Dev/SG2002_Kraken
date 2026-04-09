@@ -71,8 +71,10 @@ worker release path, watchdog hooks, and USB console subsystem contract.
 
 The bare-metal DWC2 USB scaffold is now disabled by default. That keeps the
 status and platform-capability reports honest until EP0 handling and endpoint
-scheduling are implemented. If you want to keep experimenting with the USB
-scaffold, build with:
+scheduling are implemented. The current CDC ACM experiment also avoids one class
+of reconnect loop by refusing to queue USB console output unless the host has
+opened the port and by dropping stale TX data when DTR deasserts. If you want
+to keep experimenting with the USB scaffold, build with:
 
 `make EXTRA_CFLAGS='-DKRAKEN_ENABLE_USB_DWC2_SCAFFOLD=1'`
 
@@ -91,6 +93,26 @@ T-Head cache-management instructions used by the C906 core.
 The shared control page now also carries a small fault log ring so the bootloader,
 kernel, and worker can leave bring-up breadcrumbs that you can inspect with the
 `faults` console command.
+
+The bring-up path now also mirrors stage, trace, and fault events into a
+separate persistent ring in reserved DDR. That ring is meant for reset-loop
+debugging: it survives warm resets long enough for the next boot to snapshot
+the previous run, and you can inspect it with the kernel `persist` command or
+clear it with `persist-clear`. It is not an SD-backed log and it does not
+survive a full power loss.
+
+Because the Nano W bring-up path can still reset before a console is usable,
+the bootloader now also replays a compact summary of the previous boot on the
+user LED right after the initial single bootloader blink:
+
+- `3` pulses: diagnostic marker
+- `N` pulses: previous stage plus one
+- `N` pulses: previous source tag plus one
+- `N` pulses: low nibble of the previous trace/fault code plus one
+
+The supervisor loop also now emits coarse heartbeat trace records so the
+persistent log can show whether the kernel stayed alive for a while before
+falling back into the reset loop.
 
 The RISC-V path now also installs a machine-mode trap vector in all three C906
 images. Bootloader, kernel, and worker exceptions are printed on UART and latched

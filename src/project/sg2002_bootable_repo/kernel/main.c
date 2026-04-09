@@ -112,6 +112,9 @@ static void restart_worker(shared_ctrl_t *ctl, uint32_t reason) {
 }
 
 static void print_status(shared_ctrl_t *ctl) {
+    kraken_persist_log_t *persist = persistent_log();
+
+    inval_dcache_range((uintptr_t)persist, (uintptr_t)persist + sizeof(*persist));
     console_puts("[status] stage=");
     console_puthex(ctl->system_stage);
     console_puts(" worker=");
@@ -130,6 +133,13 @@ static void print_status(shared_ctrl_t *ctl) {
     console_puthex(ctl->platform_caps);
     console_puts(" perr=");
     console_puthex(ctl->platform_errors);
+    if (persist->magic == KRAKEN_PERSIST_MAGIC &&
+        persist->version == KRAKEN_PERSIST_VERSION) {
+        console_puts(" plog=");
+        console_puthex(persist->record_count);
+        console_puts(" pseq=");
+        console_puthex(persist->next_seq);
+    }
     console_puts("\n");
 }
 
@@ -225,6 +235,79 @@ static void print_trace(shared_ctrl_t *ctl) {
     }
 }
 
+static const char *persist_kind_name(uint32_t kind) {
+    switch (kind) {
+    case PERSIST_EVT_STAGE:
+        return "stage";
+    case PERSIST_EVT_TRACE:
+        return "trace";
+    case PERSIST_EVT_FAULT:
+        return "fault";
+    case PERSIST_EVT_BOOT_SUMMARY:
+        return "boot";
+    default:
+        return "unknown";
+    }
+}
+
+static void print_persist(shared_ctrl_t *ctl) {
+    kraken_persist_log_t *log = persistent_log();
+    (void)ctl;
+
+    inval_dcache_range((uintptr_t)log, (uintptr_t)log + sizeof(*log));
+    if (log->magic != KRAKEN_PERSIST_MAGIC ||
+        log->version != KRAKEN_PERSIST_VERSION) {
+        console_puts("[persist] none\n");
+        return;
+    }
+
+    console_puts("[persist] count=");
+    console_puthex(log->record_count);
+    console_puts(" seq=");
+    console_puthex(log->next_seq);
+    console_puts(" prev_boot=");
+    console_puthex(log->last_boot_count);
+    console_puts(" prev_rst=");
+    console_puthex(log->last_reset_reason);
+    console_puts(" prev_stage=");
+    console_puthex(log->last_stage);
+    console_puts(" prev_flags=");
+    console_puthex(log->last_system_flags);
+    console_puts(" prev_trace=");
+    console_puthex(log->last_trace_source);
+    console_puts(":");
+    console_puthex(log->last_trace_code);
+    console_puts(" prev_fault=");
+    console_puthex(log->last_fault_tag);
+    console_puts(":");
+    console_puthex(log->last_fault_code);
+    console_puts("\n");
+
+    for (uint32_t i = 0; i < log->record_count; ++i) {
+        uint32_t slot = (log->write_head + KRAKEN_PERSIST_LOG_CAPACITY -
+                         log->record_count + i) &
+                        (KRAKEN_PERSIST_LOG_CAPACITY - 1u);
+        const volatile kraken_persist_record_t *rec = &log->records[slot];
+        console_puts("[persist] seq=");
+        console_puthex(rec->seq);
+        console_puts(" boot=");
+        console_puthex(rec->boot_count);
+        console_puts(" kind=");
+        console_puts(persist_kind_name(rec->kind));
+        console_puts(" src=");
+        console_puthex(rec->source);
+        console_puts(" code=");
+        console_puthex(rec->code);
+        console_puts(" a0=");
+        console_puthex(rec->arg0);
+        console_puts(" a1=");
+        console_puthex(rec->arg1);
+        console_puts(" stage=");
+        console_puthex(rec->stage);
+        console_puts("\n");
+    }
+}
+
 static void handle_console(shared_ctrl_t *ctl) {
     /* 64 bytes including the NUL terminator; longer lines are truncated. */
     static char line[64];
@@ -246,6 +329,12 @@ static void handle_console(shared_ctrl_t *ctl) {
                 print_faults(ctl);
             } else if (sg2002_memcmp(line, "trace", sizeof("trace")) == 0) {
                 print_trace(ctl);
+            } else if (sg2002_memcmp(line, "persist", sizeof("persist")) == 0) {
+                print_persist(ctl);
+            } else if (sg2002_memcmp(line, "persist-clear",
+                                      sizeof("persist-clear")) == 0) {
+                ctl_persist_clear();
+                console_puts("[kernel] persistent log cleared\n");
             } else if (sg2002_memcmp(line, "run", sizeof("run")) == 0) {
                 console_puts("[kernel] queue worker job\n");
                 send_worker_cmd(ctl, CMD_RUN_JOB, 0x1234u, 0);
@@ -256,7 +345,7 @@ static void handle_console(shared_ctrl_t *ctl) {
                 console_puts("[kernel] stop worker\n");
                 send_worker_cmd(ctl, CMD_STOP, 0, 0);
             } else if (line_len != 0) {
-                console_puts("[kernel] commands: status cpu trap faults trace run panic stop\n");
+                console_puts("[kernel] commands: status cpu trap faults trace persist persist-clear run panic stop\n");
             }
             line_len = 0;
             continue;
@@ -320,8 +409,11 @@ void kernel_main(uintptr_t hartid, uintptr_t dtb_addr) {
         ctl->kernel_pet_seq++;
         ctl_flush(ctl);
         mailbox_send_8051(CMD_PET_8051, ctl->kernel_pet_seq);
-        if ((ctl->kernel_heartbeat & 0x1ffffu) == 0)
+        if ((ctl->kernel_heartbeat & 0x1ffffu) == 0) {
+            ctl_trace_log(ctl, FAULTSRC_KERNEL, TRACE_KERNEL_HEARTBEAT,
+                          ctl->kernel_heartbeat, ctl->worker_heartbeat);
             sg2002_user_led_toggle();
+        }
         usb_serial_poll();
         handle_console(ctl);
 
