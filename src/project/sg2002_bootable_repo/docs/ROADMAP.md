@@ -28,8 +28,14 @@
 - storage and filesystem bring-up
 
 ## Phase 4 — USB native device stack
-- SG2002 USB device init
+- finish SG2002 USB device init with the final TRM-backed clock/reset/PHY sequence
 - EP0 control transfer support
 - CDC ACM data/notification endpoints
 - ring to endpoint bridge
+- correct PLIC interrupt hookup for the USB controller
 - interactive shell over USB ACM
+
+## Recent USB reliability work
+- USB console TX now only queues while the host CDC ACM port is connected
+- stale USB TX bytes are dropped when the host deasserts DTR to avoid reconnect floods
+- device descriptor `bcdUSB` now advertises 0x0210 to match CDC IAD usage

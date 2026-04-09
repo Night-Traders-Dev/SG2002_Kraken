@@ -71,8 +71,10 @@ worker release path, watchdog hooks, and USB console subsystem contract.
 
 The bare-metal DWC2 USB scaffold is now disabled by default. That keeps the
 status and platform-capability reports honest until EP0 handling and endpoint
-scheduling are implemented. If you want to keep experimenting with the USB
-scaffold, build with:
+scheduling are implemented. The current CDC ACM experiment also avoids one class
+of reconnect loop by refusing to queue USB console output unless the host has
+opened the port and by dropping stale TX data when DTR deasserts. If you want
+to keep experimenting with the USB scaffold, build with:
 
 `make EXTRA_CFLAGS='-DKRAKEN_ENABLE_USB_DWC2_SCAFFOLD=1'`
 

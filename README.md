@@ -20,7 +20,7 @@ and supervises the 8051 watchdog core.
 - optional manager-side worker staging now uses a footer with payload size and
   CRC32 validation instead of a blind fixed-length copy.
 - a USB serial subsystem and Linux-assisted CDC ACM helper flow have been added.
-- the bare-metal DWC2 USB scaffold is now opt-in until EP0 and endpoint support land.
+- the bare-metal DWC2 USB scaffold is now opt-in until EP0 and endpoint support land, and the CDC ACM console path now drops stale TX data on host disconnect to avoid reconnect loops.
 - the SD builder now has a Nano W RISC-V ROM-boot mode that emits a `boot.sd`
   FIT image and copies a supplied vendor `fip.bin` into the FAT partition.
 - the Nano W user LED now provides bare-metal proof-of-life and panic patterns
