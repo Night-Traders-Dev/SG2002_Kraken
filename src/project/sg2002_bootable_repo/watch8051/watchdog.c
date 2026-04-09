@@ -3,6 +3,7 @@
 /*
  * Shared control page fields mirrored into 8051 xdata offsets.
  * These offsets match the early words in shared_ctrl_t in include/kraken.h.
+ * If shared_ctrl_t changes, keep the mirrored offsets in sync.
  */
 __xdata __at (0x0008) volatile uint32_t system_stage;
 __xdata __at (0x000c) volatile uint32_t system_flags;
@@ -19,7 +20,15 @@ static void pet_hw(void) {
     watchdog_pet_count++;
 }
 
-static void do_reset(uint32_t reason) {
+/*
+ * Signal a watchdog reset request to the C906 side.
+ *
+ * This path does not directly drive a hardware reset line yet. It depends on
+ * the vendor watchdog or the C906 kernel turning SYSF_WATCHDOG_TIMEOUT into a
+ * real reset. Until the hardware watchdog path is wired up, this loop only
+ * keeps the 8051 alive while the SoC waits for the next reset mechanism.
+ */
+static void do_signal_reset(uint32_t reason) {
     reset_reason = reason;
     system_flags |= 0x80000000UL;
     for (;;) {
@@ -44,7 +53,7 @@ void main(void) {
             kernel_timeout = 0;
             pet_hw();
         } else if (++kernel_timeout > 60000u) {
-            do_reset(0x80510001UL);
+            do_signal_reset(0x80510001UL);
         }
 
         if (worker_heartbeat != last_worker) {
@@ -52,7 +61,7 @@ void main(void) {
             watchdog_last_worker_seq = last_worker;
             worker_timeout = 0;
         } else if (worker_state == 3u && ++worker_timeout > 60000u) {
-            do_reset(0x80510002UL);
+            do_signal_reset(0x80510002UL);
         }
     }
 }

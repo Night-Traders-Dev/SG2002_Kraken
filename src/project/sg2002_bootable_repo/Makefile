@@ -8,6 +8,10 @@ PACKIHX ?= packihx
 PYTHON ?= python3
 MAKE ?= make
 
+ifeq ($(shell command -v $(SDCC) 2>/dev/null),)
+$(error SDCC ($(SDCC)) not found. Install SDCC to build watch8051. On Debian/Ubuntu: sudo apt install sdcc)
+endif
+
 RV_MARCH ?= rv64imac
 RV_MABI ?= lp64
 EXTRA_CFLAGS ?=

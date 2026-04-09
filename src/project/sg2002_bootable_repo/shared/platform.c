@@ -78,11 +78,14 @@ void sg2002_boot_8051(uintptr_t entry_addr) {
 }
 
 void kraken_jump_to(uintptr_t entry_addr) {
-    void (*entry)(void) = (void (*)(void))(uintptr_t)entry_addr;
+    shared_ctrl_t *ctl = shared_ctrl();
+    uintptr_t hartid = (uintptr_t)ctl->boot_hartid;
+    uintptr_t dtb_addr = (uintptr_t)ctl->boot_dtb_addr;
+
     fence_rw();
     fence_i();
-    entry();
-    for (;;) cpu_relax();
+    ((kraken_entry_fn_t)(uintptr_t)entry_addr)(hartid, dtb_addr);
+    __builtin_unreachable();
 }
 
 void sg2002_user_led_panic_loop(void) {

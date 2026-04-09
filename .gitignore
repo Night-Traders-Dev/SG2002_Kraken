@@ -21,3 +21,10 @@ CMakeUserPresets.json
 #cmake-build-*
 src/out/sg2002_sdcard.img
 src/out/*
+src/project/sg2002_bootable_repo/build/*.bin
+src/project/sg2002_bootable_repo/build/*.elf
+src/project/sg2002_bootable_repo/build/*.dis
+src/project/sg2002_bootable_repo/build/*.map
+src/project/sg2002_bootable_repo/build/*.hex
+src/project/sg2002_bootable_repo/build/*.ihx
+src/project/sg2002_bootable_repo/build/package/

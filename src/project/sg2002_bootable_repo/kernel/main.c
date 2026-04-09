@@ -84,7 +84,7 @@ static void boot_worker(shared_ctrl_t *ctl) {
 static void wait_for_worker_ack(shared_ctrl_t *ctl) {
     ctl_set_stage(ctl, STAGE_WORKER_WAIT_ACK);
     console_puts("[kernel] wait worker ack\n");
-    for (uint32_t spins = 0; spins < 300000u; ++spins) {
+    for (uint32_t spins = 0; spins < WORKER_ACK_SPINS; ++spins) {
         ctl_invalidate(ctl);
         if (ctl->worker_boot_ack == KRAKEN_MAGIC &&
             (ctl->worker_state == CORE_IDLE || ctl->worker_state == CORE_RUNNING)) {
@@ -199,6 +199,7 @@ static void print_faults(shared_ctrl_t *ctl) {
 }
 
 static void handle_console(shared_ctrl_t *ctl) {
+    /* 64 bytes including the NUL terminator; longer lines are truncated. */
     static char line[64];
     static uint32_t line_len = 0;
     char buf[32];
@@ -208,21 +209,21 @@ static void handle_console(shared_ctrl_t *ctl) {
         if (c == '\r') continue;
         if (c == '\n') {
             line[line_len] = '\0';
-            if (sg2002_memcmp(line, "status", 7) == 0) {
+            if (sg2002_memcmp(line, "status", sizeof("status")) == 0) {
                 print_status(ctl);
-            } else if (sg2002_memcmp(line, "cpu", 4) == 0) {
+            } else if (sg2002_memcmp(line, "cpu", sizeof("cpu")) == 0) {
                 print_cpu(ctl);
-            } else if (sg2002_memcmp(line, "trap", 5) == 0) {
+            } else if (sg2002_memcmp(line, "trap", sizeof("trap")) == 0) {
                 print_trap(ctl);
-            } else if (sg2002_memcmp(line, "faults", 7) == 0) {
+            } else if (sg2002_memcmp(line, "faults", sizeof("faults")) == 0) {
                 print_faults(ctl);
-            } else if (sg2002_memcmp(line, "run", 4) == 0) {
+            } else if (sg2002_memcmp(line, "run", sizeof("run")) == 0) {
                 console_puts("[kernel] queue worker job\n");
                 send_worker_cmd(ctl, CMD_RUN_JOB, 0x1234u, 0);
-            } else if (sg2002_memcmp(line, "panic", 6) == 0) {
+            } else if (sg2002_memcmp(line, "panic", sizeof("panic")) == 0) {
                 console_puts("[kernel] inject worker panic\n");
                 send_worker_cmd(ctl, CMD_PANIC, 0, 0);
-            } else if (sg2002_memcmp(line, "stop", 5) == 0) {
+            } else if (sg2002_memcmp(line, "stop", sizeof("stop")) == 0) {
                 console_puts("[kernel] stop worker\n");
                 send_worker_cmd(ctl, CMD_STOP, 0, 0);
             } else if (line_len != 0) {
@@ -294,7 +295,7 @@ void kernel_main(uintptr_t hartid, uintptr_t dtb_addr) {
             console_puts("[kernel] worker fault\n");
             restart_worker(ctl, 0xC0DE0003u);
             stale = 0;
-        } else if (stale > 100000u) {
+        } else if (stale > WORKER_STALE_SPINS) {
             ctl->system_flags |= SYSF_WORKER_STALE;
             ctl_set_platform_error(ctl, PLATERR_WORKER_STALE);
             console_puts("[kernel] worker stale\n");
