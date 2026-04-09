@@ -9,6 +9,11 @@ void ctl_invalidate(shared_ctrl_t *ctl) {
 }
 
 void ctl_init_defaults(shared_ctrl_t *ctl) {
+    uint32_t boot_count = 0;
+
+    if (ctl->magic == KRAKEN_MAGIC && ctl->version == KRAKEN_VERSION)
+        boot_count = ctl->boot_count;
+
     sg2002_memset((void *)ctl, 0, sizeof(*ctl));
     ctl->magic = KRAKEN_MAGIC;
     ctl->version = KRAKEN_VERSION;
@@ -20,7 +25,9 @@ void ctl_init_defaults(shared_ctrl_t *ctl) {
     ctl->usb_state = USB_SERIAL_OFF;
     ctl->usb_console_enabled = 1;
     ctl->platform_caps = sg2002_platform_caps();
-    ctl->boot_count = 1;
+    ctl->boot_count = boot_count + 1u;
+    if (ctl->boot_count == 0)
+        ctl->boot_count = 1u;
     ctl_flush(ctl);
 }
 

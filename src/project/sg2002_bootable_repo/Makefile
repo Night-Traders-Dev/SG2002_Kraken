@@ -54,7 +54,7 @@ $(OUT)/mars_mcu_fw.bin: watch8051/watchdog.c watch8051/Makefile | $(OUT)
 	$(MAKE) -C watch8051 OUT=../$(OUT) SDCC=$(SDCC) PACKIHX=$(PACKIHX)
 
 package: $(OUT)/bootloader.bin $(OUT)/kernel.bin $(OUT)/worker.bin $(OUT)/mars_mcu_fw.bin
-	$(PYTHON) tools/package_images.py --bootloader $(OUT)/bootloader.bin --kernel $(OUT)/kernel.bin --worker $(OUT)/worker.bin --mcu $(OUT)/mars_mcu_fw.bin --outdir $(OUT)/package
+	$(PYTHON) tools/package_images.py --bootloader $(OUT)/bootloader.bin --kernel $(OUT)/kernel.bin --worker $(OUT)/worker.bin --mcu $(OUT)/mars_mcu_fw.bin --kraken-header include/kraken.h --outdir $(OUT)/package
 
 clean:
 	rm -rf $(OUT)
