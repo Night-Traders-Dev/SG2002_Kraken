@@ -101,6 +101,19 @@ the previous run, and you can inspect it with the kernel `persist` command or
 clear it with `persist-clear`. It is not an SD-backed log and it does not
 survive a full power loss.
 
+Because the Nano W bring-up path can still reset before a console is usable,
+the bootloader now also replays a compact summary of the previous boot on the
+user LED right after the initial single bootloader blink:
+
+- `3` pulses: diagnostic marker
+- `N` pulses: previous stage plus one
+- `N` pulses: previous source tag plus one
+- `N` pulses: low nibble of the previous trace/fault code plus one
+
+The supervisor loop also now emits coarse heartbeat trace records so the
+persistent log can show whether the kernel stayed alive for a while before
+falling back into the reset loop.
+
 The RISC-V path now also installs a machine-mode trap vector in all three C906
 images. Bootloader, kernel, and worker exceptions are printed on UART and latched
 into the shared control page so the kernel `trap` command can show the last worker

@@ -109,6 +109,12 @@
 #ifndef KRAKEN_USER_LED_BLINK_DELAY_CYCLES
 #define KRAKEN_USER_LED_BLINK_DELAY_CYCLES 40000000u
 #endif
+#ifndef KRAKEN_USER_LED_DIAG_DELAY_CYCLES
+#define KRAKEN_USER_LED_DIAG_DELAY_CYCLES 12000000u
+#endif
+#ifndef KRAKEN_USER_LED_DIAG_GROUP_GAP_CYCLES
+#define KRAKEN_USER_LED_DIAG_GROUP_GAP_CYCLES 50000000u
+#endif
 
 enum core_state {
     CORE_OFFLINE = 0,
@@ -203,6 +209,7 @@ enum kraken_trace_code {
     TRACE_KERNEL_WORKER_FAULT    = 0x2006u,
     TRACE_KERNEL_WORKER_STALE    = 0x2007u,
     TRACE_KERNEL_RESTART_WORKER  = 0x2008u,
+    TRACE_KERNEL_HEARTBEAT       = 0x2009u,
     TRACE_WORKER_ENTRY           = 0x3000u,
     TRACE_WORKER_CMD_BOOT        = 0x3001u,
     TRACE_WORKER_CMD_RUN_JOB     = 0x3002u,
@@ -474,6 +481,7 @@ void sg2002_user_led_init(void);
 void sg2002_user_led_set(int on);
 void sg2002_user_led_toggle(void);
 void sg2002_user_led_blink(uint32_t pulses);
+void sg2002_user_led_show_persist_summary(const kraken_persist_log_t *log);
 void sg2002_user_led_panic_loop(void) __attribute__((noreturn));
 
 int sg2002_image_present(uintptr_t addr);

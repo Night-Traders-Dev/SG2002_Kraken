@@ -4,6 +4,24 @@ static inline uint32_t user_led_mask(void) {
     return 1u << KRAKEN_USER_LED_PIN;
 }
 
+static void user_led_pulse_group(uint32_t pulses, uint32_t pulse_delay_cycles) {
+#if KRAKEN_ENABLE_NANOW_USER_LED
+    if (pulses == 0u)
+        pulses = 1u;
+
+    for (uint32_t i = 0; i < pulses; ++i) {
+        sg2002_user_led_set(1);
+        delay_cycles(pulse_delay_cycles);
+        sg2002_user_led_set(0);
+        delay_cycles(pulse_delay_cycles);
+    }
+    delay_cycles(KRAKEN_USER_LED_DIAG_GROUP_GAP_CYCLES);
+#else
+    (void)pulses;
+    (void)pulse_delay_cycles;
+#endif
+}
+
 uint32_t sg2002_platform_caps(void) {
     uint32_t caps = PLATCAP_RISCV_C906 |
                     PLATCAP_WORKER_RELEASE |
@@ -66,6 +84,39 @@ void sg2002_user_led_blink(uint32_t pulses) {
     }
 #else
     (void)pulses;
+#endif
+}
+
+void sg2002_user_led_show_persist_summary(const kraken_persist_log_t *log) {
+#if KRAKEN_ENABLE_NANOW_USER_LED
+    uint32_t source;
+    uint32_t detail;
+
+    if (log == 0 ||
+        log->magic != KRAKEN_PERSIST_MAGIC ||
+        log->version != KRAKEN_PERSIST_VERSION ||
+        log->last_boot_count == 0u)
+        return;
+
+    source = log->last_fault_tag != 0u ? log->last_fault_tag : log->last_trace_source;
+    detail = log->last_fault_code != 0u ? log->last_fault_code : log->last_trace_code;
+
+    /*
+     * Replay the previous-boot summary as:
+     *   3 pulses  -> summary marker
+     *   N pulses  -> previous stage + 1
+     *   N pulses  -> previous source + 1
+     *   N pulses  -> low nibble of previous code + 1
+     */
+    user_led_pulse_group(3u, KRAKEN_USER_LED_DIAG_DELAY_CYCLES);
+    user_led_pulse_group((log->last_stage & 0x0fu) + 1u,
+                         KRAKEN_USER_LED_DIAG_DELAY_CYCLES);
+    user_led_pulse_group((source & 0x0fu) + 1u,
+                         KRAKEN_USER_LED_DIAG_DELAY_CYCLES);
+    user_led_pulse_group((detail & 0x0fu) + 1u,
+                         KRAKEN_USER_LED_DIAG_DELAY_CYCLES);
+#else
+    (void)log;
 #endif
 }
 

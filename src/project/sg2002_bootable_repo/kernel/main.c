@@ -409,8 +409,11 @@ void kernel_main(uintptr_t hartid, uintptr_t dtb_addr) {
         ctl->kernel_pet_seq++;
         ctl_flush(ctl);
         mailbox_send_8051(CMD_PET_8051, ctl->kernel_pet_seq);
-        if ((ctl->kernel_heartbeat & 0x1ffffu) == 0)
+        if ((ctl->kernel_heartbeat & 0x1ffffu) == 0) {
+            ctl_trace_log(ctl, FAULTSRC_KERNEL, TRACE_KERNEL_HEARTBEAT,
+                          ctl->kernel_heartbeat, ctl->worker_heartbeat);
             sg2002_user_led_toggle();
+        }
         usb_serial_poll();
         handle_console(ctl);
 
