@@ -26,6 +26,8 @@ void bootloader_main(uintptr_t hartid, uintptr_t dtb_addr) {
     ctl_note_riscv_boot_identity(ctl, RISCV_ID_BOOTLOADER, (uint32_t)hartid);
     ctl->system_flags |= SYSF_BOOTLOADER_ACTIVE;
     ctl_set_stage(ctl, STAGE_BOOTLOADER);
+    ctl_trace_log(ctl, FAULTSRC_BOOTLOADER, TRACE_BOOT_ENTRY,
+                  (uint32_t)hartid, (uint32_t)dtb_addr);
 #if KRAKEN_ENABLE_USB_DWC2_SCAFFOLD
     usb_serial_init();
 #endif
@@ -40,9 +42,13 @@ void bootloader_main(uintptr_t hartid, uintptr_t dtb_addr) {
         boot_panic(ctl, 0xB0070001u, SYSF_KERNEL_IMAGE_MISSING);
     if (!sg2002_image_present(WORKER_LOAD_ADDR))
         ctl->system_flags |= SYSF_WORKER_IMAGE_MISSING;
+    ctl_trace_log(ctl, FAULTSRC_BOOTLOADER, TRACE_BOOT_IMAGES_READY,
+                  ctl->system_flags, (uint32_t)KERNEL_LOAD_ADDR);
     ctl_flush(ctl);
 
     ctl_set_stage(ctl, STAGE_KERNEL_ENTRY);
+    ctl_trace_log(ctl, FAULTSRC_BOOTLOADER, TRACE_BOOT_HANDOFF_KERNEL,
+                  (uint32_t)KERNEL_LOAD_ADDR, ctl->system_stage);
     console_puts("[boot] handoff kernel\n");
     kraken_jump_to(KERNEL_LOAD_ADDR);
 }

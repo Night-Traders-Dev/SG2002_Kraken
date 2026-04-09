@@ -99,6 +99,8 @@ static void wait_for_worker_ack(shared_ctrl_t *ctl) {
 }
 
 static void restart_worker(shared_ctrl_t *ctl, uint32_t reason) {
+    ctl_trace_log(ctl, FAULTSRC_KERNEL, TRACE_KERNEL_RESTART_WORKER,
+                  reason, ctl->worker_restart_count + 1u);
     ctl_fault_log(ctl, FAULTSRC_KERNEL, reason,
                   ctl->worker_restart_count + 1u, ctl->worker_heartbeat);
     ctl->worker_restart_count++;
@@ -198,6 +200,31 @@ static void print_faults(shared_ctrl_t *ctl) {
     }
 }
 
+static void print_trace(shared_ctrl_t *ctl) {
+    uint32_t count = ctl->trace_log_count;
+    uint32_t head = ctl->trace_log_head;
+
+    if (count == 0) {
+        console_puts("[trace] none\n");
+        return;
+    }
+
+    for (uint32_t i = 0; i < count; ++i) {
+        uint32_t slot = (head + KRAKEN_TRACE_LOG_SIZE - count + i) &
+                        (KRAKEN_TRACE_LOG_SIZE - 1u);
+        const volatile kraken_trace_record_t *rec = &ctl->trace_log[slot];
+        console_puts("[trace] src=");
+        console_puthex(rec->source);
+        console_puts(" code=");
+        console_puthex(rec->code);
+        console_puts(" a0=");
+        console_puthex(rec->arg0);
+        console_puts(" a1=");
+        console_puthex(rec->arg1);
+        console_puts("\n");
+    }
+}
+
 static void handle_console(shared_ctrl_t *ctl) {
     /* 64 bytes including the NUL terminator; longer lines are truncated. */
     static char line[64];
@@ -217,6 +244,8 @@ static void handle_console(shared_ctrl_t *ctl) {
                 print_trap(ctl);
             } else if (sg2002_memcmp(line, "faults", sizeof("faults")) == 0) {
                 print_faults(ctl);
+            } else if (sg2002_memcmp(line, "trace", sizeof("trace")) == 0) {
+                print_trace(ctl);
             } else if (sg2002_memcmp(line, "run", sizeof("run")) == 0) {
                 console_puts("[kernel] queue worker job\n");
                 send_worker_cmd(ctl, CMD_RUN_JOB, 0x1234u, 0);
@@ -227,7 +256,7 @@ static void handle_console(shared_ctrl_t *ctl) {
                 console_puts("[kernel] stop worker\n");
                 send_worker_cmd(ctl, CMD_STOP, 0, 0);
             } else if (line_len != 0) {
-                console_puts("[kernel] commands: status cpu trap faults run panic stop\n");
+                console_puts("[kernel] commands: status cpu trap faults trace run panic stop\n");
             }
             line_len = 0;
             continue;
@@ -257,6 +286,8 @@ void kernel_main(uintptr_t hartid, uintptr_t dtb_addr) {
         ctl_init_defaults(ctl);
     ctl_note_boot_abi(ctl, (uint32_t)hartid, dtb_addr);
     ctl_note_riscv_boot_identity(ctl, RISCV_ID_KERNEL, (uint32_t)hartid);
+    ctl_trace_log(ctl, FAULTSRC_KERNEL, TRACE_KERNEL_ENTRY,
+                  (uint32_t)hartid, (uint32_t)dtb_addr);
     ctl->system_flags &= ~SYSF_BOOTLOADER_ACTIVE;
     ctl->system_flags |= SYSF_KERNEL_ACTIVE;
     ctl_set_stage(ctl, STAGE_KERNEL_ENTRY);
@@ -264,10 +295,20 @@ void kernel_main(uintptr_t hartid, uintptr_t dtb_addr) {
     if (ctl->usb_state == USB_SERIAL_OFF) usb_serial_init();
 #endif
 
+    ctl_trace_log(ctl, FAULTSRC_KERNEL, TRACE_KERNEL_BOOT_WORKER,
+                  (uint32_t)WORKER_LOAD_ADDR, ctl->system_flags);
     boot_worker(ctl);
+    ctl_trace_log(ctl, FAULTSRC_KERNEL, TRACE_KERNEL_WAIT_ACK,
+                  ctl->worker_state, ctl->kernel_cmd_seq);
     wait_for_worker_ack(ctl);
+    ctl_trace_log(ctl, FAULTSRC_KERNEL, TRACE_KERNEL_ACK_OK,
+                  ctl->worker_state, ctl->worker_boot_ack);
     ensure_watchdog_started(ctl);
+    ctl_trace_log(ctl, FAULTSRC_KERNEL, TRACE_KERNEL_WATCHDOG_START,
+                  ctl->system_stage, ctl->kernel_pet_seq);
     ctl_set_stage(ctl, STAGE_OS_RUNNING);
+    ctl_trace_log(ctl, FAULTSRC_KERNEL, TRACE_KERNEL_SUPERVISOR_LOOP,
+                  ctl->worker_state, ctl->system_flags);
     sg2002_user_led_set(1);
     console_puts("[kernel] supervisor loop\n");
 
@@ -291,12 +332,16 @@ void kernel_main(uintptr_t hartid, uintptr_t dtb_addr) {
         }
 
         if (ctl->worker_state == CORE_FAULT) {
+            ctl_trace_log(ctl, FAULTSRC_KERNEL, TRACE_KERNEL_WORKER_FAULT,
+                          ctl->worker_cmd, ctl->worker_cmd_ack);
             console_puts("[kernel] worker fault\n");
             restart_worker(ctl, 0xC0DE0003u);
             stale = 0;
         } else if (stale > WORKER_STALE_SPINS) {
             ctl->system_flags |= SYSF_WORKER_STALE;
             ctl_set_platform_error(ctl, PLATERR_WORKER_STALE);
+            ctl_trace_log(ctl, FAULTSRC_KERNEL, TRACE_KERNEL_WORKER_STALE,
+                          stale, ctl->worker_heartbeat);
             console_puts("[kernel] worker stale\n");
             restart_worker(ctl, 0xC0DE0004u);
             stale = 0;

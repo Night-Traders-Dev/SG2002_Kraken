@@ -63,6 +63,7 @@
     ((WORKER_STALE_TIMEOUT_MS * KRAKEN_BOOT_CYCLES_PER_MS) / 1000u)
 #define WORKER_IMAGE_PROBE_WORDS      8u
 #define KRAKEN_FAULT_LOG_SIZE         16u
+#define KRAKEN_TRACE_LOG_SIZE         32u
 #define USB_SERIAL_RING_SIZE          512u
 #define USB_SERIAL_PROTO_ACM          1u
 #define KRAKEN_STRLIT_BYTES(lit)      (sizeof(lit))
@@ -185,6 +186,27 @@ enum kraken_platform_errors {
     PLATERR_WORKER_RELEASE_FAILED  = 1u << 4,
 };
 
+enum kraken_trace_code {
+    TRACE_BOOT_ENTRY             = 0x1000u,
+    TRACE_BOOT_IMAGES_READY      = 0x1001u,
+    TRACE_BOOT_HANDOFF_KERNEL    = 0x1002u,
+    TRACE_KERNEL_ENTRY           = 0x2000u,
+    TRACE_KERNEL_BOOT_WORKER     = 0x2001u,
+    TRACE_KERNEL_WAIT_ACK        = 0x2002u,
+    TRACE_KERNEL_ACK_OK          = 0x2003u,
+    TRACE_KERNEL_WATCHDOG_START  = 0x2004u,
+    TRACE_KERNEL_SUPERVISOR_LOOP = 0x2005u,
+    TRACE_KERNEL_WORKER_FAULT    = 0x2006u,
+    TRACE_KERNEL_WORKER_STALE    = 0x2007u,
+    TRACE_KERNEL_RESTART_WORKER  = 0x2008u,
+    TRACE_WORKER_ENTRY           = 0x3000u,
+    TRACE_WORKER_CMD_BOOT        = 0x3001u,
+    TRACE_WORKER_CMD_RUN_JOB     = 0x3002u,
+    TRACE_WORKER_CMD_PANIC       = 0x3003u,
+    TRACE_WORKER_CMD_STOP        = 0x3004u,
+    TRACE_TRAP_PANIC             = 0x4000u,
+};
+
 enum sg2002_worker_release_status {
     SG2002_WORKER_RELEASE_OK = 0,
     SG2002_WORKER_RELEASE_BOOTADDR_LO_MISMATCH = 1,
@@ -219,6 +241,13 @@ typedef struct {
     volatile uint32_t arg0;
     volatile uint32_t arg1;
 } kraken_fault_record_t;
+
+typedef struct {
+    volatile uint32_t source;
+    volatile uint32_t code;
+    volatile uint32_t arg0;
+    volatile uint32_t arg1;
+} kraken_trace_record_t;
 
 enum kraken_riscv_identity_slot {
     RISCV_ID_BOOTLOADER = 0,
@@ -287,6 +316,11 @@ typedef struct {
     volatile kraken_fault_record_t fault_log[KRAKEN_FAULT_LOG_SIZE];        /* 0x0f8 */
     volatile uint8_t usb_rx_ring[USB_SERIAL_RING_SIZE];                     /* 0x1f8 */
     volatile uint8_t usb_tx_ring[USB_SERIAL_RING_SIZE];                     /* 0x3f8 */
+    volatile uint32_t trace_log_head;
+    volatile uint32_t trace_log_count;
+    volatile uint32_t trace_last_source;
+    volatile uint32_t trace_last_code;
+    volatile kraken_trace_record_t trace_log[KRAKEN_TRACE_LOG_SIZE];
 } shared_ctrl_t;
 
 _Static_assert(offsetof(shared_ctrl_t, system_stage) == 0x08,
@@ -357,6 +391,8 @@ void ctl_set_stage(shared_ctrl_t *ctl, uint32_t stage);
 uint32_t ctl_next_cmd_seq(shared_ctrl_t *ctl);
 void ctl_note_boot_abi(shared_ctrl_t *ctl, uint32_t hartid, uintptr_t dtb_addr);
 void ctl_fault_log(shared_ctrl_t *ctl, uint32_t tag, uint32_t code,
+                   uint32_t arg0, uint32_t arg1);
+void ctl_trace_log(shared_ctrl_t *ctl, uint32_t source, uint32_t code,
                    uint32_t arg0, uint32_t arg1);
 void ctl_note_trap(shared_ctrl_t *ctl, uint32_t source_tag,
                    uint64_t mcause, uint64_t mepc,

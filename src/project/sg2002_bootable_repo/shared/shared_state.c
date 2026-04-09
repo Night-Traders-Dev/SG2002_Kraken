@@ -66,6 +66,22 @@ void ctl_fault_log(shared_ctrl_t *ctl, uint32_t tag, uint32_t code,
     ctl_flush(ctl);
 }
 
+void ctl_trace_log(shared_ctrl_t *ctl, uint32_t source, uint32_t code,
+                   uint32_t arg0, uint32_t arg1) {
+    uint32_t slot = ctl->trace_log_head & (KRAKEN_TRACE_LOG_SIZE - 1u);
+
+    ctl->trace_log[slot].source = source;
+    ctl->trace_log[slot].code = code;
+    ctl->trace_log[slot].arg0 = arg0;
+    ctl->trace_log[slot].arg1 = arg1;
+    ctl->trace_last_source = source;
+    ctl->trace_last_code = code;
+    ctl->trace_log_head = (slot + 1u) & (KRAKEN_TRACE_LOG_SIZE - 1u);
+    if (ctl->trace_log_count < KRAKEN_TRACE_LOG_SIZE)
+        ctl->trace_log_count++;
+    ctl_flush(ctl);
+}
+
 void ctl_note_trap(shared_ctrl_t *ctl, uint32_t source_tag,
                    uint64_t mcause, uint64_t mepc,
                    uint64_t mtval, uint64_t mstatus) {
@@ -80,6 +96,8 @@ void ctl_note_trap(shared_ctrl_t *ctl, uint32_t source_tag,
     ctl->trap_last_epc = (uint32_t)mepc;
     ctl->trap_last_tval = (uint32_t)mtval;
     ctl->trap_last_status = (uint32_t)mstatus;
+    ctl_trace_log(ctl, source_tag, TRACE_TRAP_PANIC,
+                  packed_mcause, (uint32_t)mepc);
     ctl_fault_log(ctl, source_tag, packed_mcause,
                   (uint32_t)mepc, (uint32_t)mtval);
 }
