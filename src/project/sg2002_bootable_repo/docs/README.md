@@ -69,6 +69,13 @@ This is an **AMP platform layout**:
 The current code provides the control skeleton, shared-memory ABI, staged boot flow,
 worker release path, watchdog hooks, and USB console subsystem contract.
 
+The bare-metal DWC2 USB scaffold is now disabled by default. That keeps the
+status and platform-capability reports honest until EP0 handling and endpoint
+scheduling are implemented. If you want to keep experimenting with the USB
+scaffold, build with:
+
+`make EXTRA_CFLAGS='-DKRAKEN_ENABLE_USB_DWC2_SCAFFOLD=1'`
+
 If you enable `WORKER_STAGING_ADDR`, the package now also emits `worker_staged.bin`,
 which wraps the raw worker payload with a small footer carrying size and CRC32 so the
 kernel can validate and copy it safely.

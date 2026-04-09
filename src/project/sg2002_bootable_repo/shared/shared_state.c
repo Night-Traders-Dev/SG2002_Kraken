@@ -23,7 +23,7 @@ void ctl_init_defaults(shared_ctrl_t *ctl) {
     ctl->worker_state = CORE_OFFLINE;
     ctl->worker_cmd = CMD_NONE;
     ctl->usb_state = USB_SERIAL_OFF;
-    ctl->usb_console_enabled = 1;
+    ctl->usb_console_enabled = KRAKEN_ENABLE_USB_DWC2_SCAFFOLD ? 1u : 0u;
     ctl->platform_caps = sg2002_platform_caps();
     ctl->boot_count = boot_count + 1u;
     if (ctl->boot_count == 0)

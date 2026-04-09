@@ -247,7 +247,9 @@ void kernel_main(void) {
     ctl->system_flags &= ~SYSF_BOOTLOADER_ACTIVE;
     ctl->system_flags |= SYSF_KERNEL_ACTIVE;
     ctl_set_stage(ctl, STAGE_KERNEL_ENTRY);
+#if KRAKEN_ENABLE_USB_DWC2_SCAFFOLD
     if (ctl->usb_state == USB_SERIAL_OFF) usb_serial_init();
+#endif
 
     boot_worker(ctl);
     wait_for_worker_ack(ctl);

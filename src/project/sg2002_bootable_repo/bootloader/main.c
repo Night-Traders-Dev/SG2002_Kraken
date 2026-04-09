@@ -24,7 +24,9 @@ void bootloader_main(void) {
     ctl_note_riscv_identity(ctl, RISCV_ID_BOOTLOADER);
     ctl->system_flags |= SYSF_BOOTLOADER_ACTIVE;
     ctl_set_stage(ctl, STAGE_BOOTLOADER);
+#if KRAKEN_ENABLE_USB_DWC2_SCAFFOLD
     usb_serial_init();
+#endif
 
     console_puts("Kraken bootloader start\n");
     console_puts("[boot] kernel @ 0x"); console_puthex((uint32_t)KERNEL_LOAD_ADDR); console_puts("\n");

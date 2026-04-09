@@ -36,4 +36,11 @@ This is **not yet a full upstream TinyUSB import**. It is a compile-clean scaffo
 
 ## Build impact
 
-The project Makefile now compiles the TinyUSB-shaped scaffold sources directly, so the repo builds without requiring an external TinyUSB checkout.
+The project Makefile now compiles the TinyUSB-shaped scaffold sources directly,
+so the repo builds without requiring an external TinyUSB checkout.
+
+The scaffold is disabled by default because the current DWC2 backend does not
+yet implement EP0 handling or endpoint scheduling. Enable it only when you are
+actively experimenting with the USB bring-up path:
+
+`make EXTRA_CFLAGS='-DKRAKEN_ENABLE_USB_DWC2_SCAFFOLD=1'`

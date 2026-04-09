@@ -220,7 +220,7 @@ def main():
             "udc_name": "40e0000.cvi-usb-dev",
             "otg_base": "0x040c0000",
             "dev_base": "0x040e0000",
-            "note": "the native bare-metal DWC2 backend is still a scaffold until EP0 handling and endpoint scheduling are completed",
+            "note": "the native bare-metal DWC2 backend is still a scaffold until EP0 handling and endpoint scheduling are completed; it is disabled by default unless you build with -DKRAKEN_ENABLE_USB_DWC2_SCAFFOLD=1",
         },
         "worker_staging": worker_staging,
         "files": meta,
