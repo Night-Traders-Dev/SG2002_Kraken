@@ -51,6 +51,8 @@
 
 #define KRAKEN_MAGIC                  0x4B52414Bu
 #define KRAKEN_VERSION                6u
+#define KRAKEN_PERSIST_MAGIC          0x4B504C47u
+#define KRAKEN_PERSIST_VERSION        1u
 #define KRAKEN_STAGED_IMAGE_MAGIC     0x4B535447u
 #define KRAKEN_STAGED_IMAGE_TAIL      0x4B454E44u
 #define KRAKEN_STAGED_IMAGE_VERSION   1u
@@ -64,10 +66,12 @@
 #define WORKER_IMAGE_PROBE_WORDS      8u
 #define KRAKEN_FAULT_LOG_SIZE         16u
 #define KRAKEN_TRACE_LOG_SIZE         32u
+#define KRAKEN_PERSIST_LOG_CAPACITY   256u
 #define USB_SERIAL_RING_SIZE          512u
 #define USB_SERIAL_PROTO_ACM          1u
 #define KRAKEN_STRLIT_BYTES(lit)      (sizeof(lit))
 #define KRAKEN_STRLIT_LEN(lit)        (sizeof(lit) - 1u)
+#define KRAKEN_PERSIST_LOG_ADDR       (SHARED_CTRL_ADDR + 0x4000ull)
 
 #ifndef WORKER_STAGING_ADDR
 #define WORKER_STAGING_ADDR           0x00000000ull
@@ -207,6 +211,13 @@ enum kraken_trace_code {
     TRACE_TRAP_PANIC             = 0x4000u,
 };
 
+enum kraken_persist_event_kind {
+    PERSIST_EVT_STAGE        = 1u,
+    PERSIST_EVT_TRACE        = 2u,
+    PERSIST_EVT_FAULT        = 3u,
+    PERSIST_EVT_BOOT_SUMMARY = 4u,
+};
+
 enum sg2002_worker_release_status {
     SG2002_WORKER_RELEASE_OK = 0,
     SG2002_WORKER_RELEASE_BOOTADDR_LO_MISMATCH = 1,
@@ -248,6 +259,17 @@ typedef struct {
     volatile uint32_t arg0;
     volatile uint32_t arg1;
 } kraken_trace_record_t;
+
+typedef struct {
+    volatile uint32_t seq;
+    volatile uint32_t boot_count;
+    volatile uint32_t kind;
+    volatile uint32_t source;
+    volatile uint32_t code;
+    volatile uint32_t arg0;
+    volatile uint32_t arg1;
+    volatile uint32_t stage;
+} kraken_persist_record_t;
 
 enum kraken_riscv_identity_slot {
     RISCV_ID_BOOTLOADER = 0,
@@ -323,6 +345,23 @@ typedef struct {
     volatile kraken_trace_record_t trace_log[KRAKEN_TRACE_LOG_SIZE];
 } shared_ctrl_t;
 
+typedef struct {
+    volatile uint32_t magic;
+    volatile uint32_t version;
+    volatile uint32_t write_head;
+    volatile uint32_t record_count;
+    volatile uint32_t next_seq;
+    volatile uint32_t last_boot_count;
+    volatile uint32_t last_reset_reason;
+    volatile uint32_t last_stage;
+    volatile uint32_t last_system_flags;
+    volatile uint32_t last_trace_source;
+    volatile uint32_t last_trace_code;
+    volatile uint32_t last_fault_tag;
+    volatile uint32_t last_fault_code;
+    volatile kraken_persist_record_t records[KRAKEN_PERSIST_LOG_CAPACITY];
+} kraken_persist_log_t;
+
 _Static_assert(offsetof(shared_ctrl_t, system_stage) == 0x08,
                "8051 xdata offset mismatch: system_stage");
 _Static_assert(offsetof(shared_ctrl_t, system_flags) == 0x0c,
@@ -345,9 +384,22 @@ _Static_assert(offsetof(shared_ctrl_t, watchdog_pet_count) == 0x3c,
                "8051 xdata offset mismatch: watchdog_pet_count");
 _Static_assert(sizeof(shared_ctrl_t) <= (WORKER_LOAD_ADDR - SHARED_CTRL_ADDR),
                "shared_ctrl_t overflows its reserved DDR region");
+_Static_assert((KRAKEN_PERSIST_LOG_CAPACITY &
+                (KRAKEN_PERSIST_LOG_CAPACITY - 1u)) == 0u,
+               "persistent log capacity must be a power of two");
+_Static_assert(KRAKEN_PERSIST_LOG_ADDR >=
+               (SHARED_CTRL_ADDR + sizeof(shared_ctrl_t)),
+               "persistent log overlaps shared_ctrl_t");
+_Static_assert((KRAKEN_PERSIST_LOG_ADDR + sizeof(kraken_persist_log_t)) <=
+               WORKER_LOAD_ADDR,
+               "persistent log overflows reserved shared DDR");
 
 static inline shared_ctrl_t *shared_ctrl(void) {
     return (shared_ctrl_t *)(uintptr_t)SHARED_CTRL_ADDR;
+}
+
+static inline kraken_persist_log_t *persistent_log(void) {
+    return (kraken_persist_log_t *)(uintptr_t)KRAKEN_PERSIST_LOG_ADDR;
 }
 
 static inline void fence_rw(void) {
@@ -401,6 +453,7 @@ void ctl_note_riscv_identity(shared_ctrl_t *ctl, uint32_t slot);
 void ctl_note_riscv_boot_identity(shared_ctrl_t *ctl, uint32_t slot, uint32_t hartid);
 void ctl_set_platform_error(shared_ctrl_t *ctl, uint32_t error_mask);
 void ctl_clear_platform_error(shared_ctrl_t *ctl, uint32_t error_mask);
+void ctl_persist_clear(void);
 
 void usb_serial_init(void);
 void usb_serial_poll(void);

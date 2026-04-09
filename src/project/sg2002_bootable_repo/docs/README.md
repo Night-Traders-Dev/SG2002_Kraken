@@ -94,6 +94,13 @@ The shared control page now also carries a small fault log ring so the bootloade
 kernel, and worker can leave bring-up breadcrumbs that you can inspect with the
 `faults` console command.
 
+The bring-up path now also mirrors stage, trace, and fault events into a
+separate persistent ring in reserved DDR. That ring is meant for reset-loop
+debugging: it survives warm resets long enough for the next boot to snapshot
+the previous run, and you can inspect it with the kernel `persist` command or
+clear it with `persist-clear`. It is not an SD-backed log and it does not
+survive a full power loss.
+
 The RISC-V path now also installs a machine-mode trap vector in all three C906
 images. Bootloader, kernel, and worker exceptions are printed on UART and latched
 into the shared control page so the kernel `trap` command can show the last worker

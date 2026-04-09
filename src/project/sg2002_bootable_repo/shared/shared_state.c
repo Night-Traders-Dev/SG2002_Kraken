@@ -1,5 +1,85 @@
 #include "kraken.h"
 
+static void persist_invalidate(kraken_persist_log_t *log) {
+    inval_dcache_range((uintptr_t)log, (uintptr_t)log + sizeof(*log));
+}
+
+static void persist_flush_header(kraken_persist_log_t *log) {
+    flush_dcache_range((uintptr_t)log,
+                       (uintptr_t)log + offsetof(kraken_persist_log_t, records));
+}
+
+static void persist_flush_record(kraken_persist_log_t *log, uint32_t slot) {
+    flush_dcache_range((uintptr_t)&log->records[slot],
+                       (uintptr_t)&log->records[slot] + sizeof(log->records[slot]));
+}
+
+static int persist_valid(const kraken_persist_log_t *log) {
+    return log->magic == KRAKEN_PERSIST_MAGIC &&
+           log->version == KRAKEN_PERSIST_VERSION;
+}
+
+static kraken_persist_log_t *persist_ensure(void) {
+    kraken_persist_log_t *log = persistent_log();
+
+    persist_invalidate(log);
+    if (persist_valid(log))
+        return log;
+
+    sg2002_memset((void *)log, 0, sizeof(*log));
+    log->magic = KRAKEN_PERSIST_MAGIC;
+    log->version = KRAKEN_PERSIST_VERSION;
+    persist_flush_header(log);
+    return log;
+}
+
+static void persist_append(uint32_t boot_count, uint32_t kind, uint32_t source,
+                           uint32_t code, uint32_t arg0, uint32_t arg1,
+                           uint32_t stage) {
+    kraken_persist_log_t *log = persist_ensure();
+    uint32_t slot = log->write_head & (KRAKEN_PERSIST_LOG_CAPACITY - 1u);
+    uint32_t seq = log->next_seq + 1u;
+
+    log->next_seq = seq;
+    log->records[slot].seq = seq;
+    log->records[slot].boot_count = boot_count;
+    log->records[slot].kind = kind;
+    log->records[slot].source = source;
+    log->records[slot].code = code;
+    log->records[slot].arg0 = arg0;
+    log->records[slot].arg1 = arg1;
+    log->records[slot].stage = stage;
+    log->write_head = (slot + 1u) & (KRAKEN_PERSIST_LOG_CAPACITY - 1u);
+    if (log->record_count < KRAKEN_PERSIST_LOG_CAPACITY)
+        log->record_count++;
+
+    persist_flush_record(log, slot);
+    persist_flush_header(log);
+}
+
+static void persist_note_previous_boot(const shared_ctrl_t *ctl) {
+    kraken_persist_log_t *log;
+
+    if (ctl->boot_count == 0u)
+        return;
+
+    log = persist_ensure();
+    log->last_boot_count = ctl->boot_count;
+    log->last_reset_reason = ctl->reset_reason;
+    log->last_stage = ctl->system_stage;
+    log->last_system_flags = ctl->system_flags;
+    log->last_trace_source = ctl->trace_last_source;
+    log->last_trace_code = ctl->trace_last_code;
+    log->last_fault_tag = ctl->fault_last_tag;
+    log->last_fault_code = ctl->fault_last_code;
+    persist_flush_header(log);
+
+    persist_append(ctl->boot_count, PERSIST_EVT_BOOT_SUMMARY,
+                   ctl->trace_last_source, ctl->reset_reason,
+                   ctl->system_stage, ctl->system_flags,
+                   ctl->system_stage);
+}
+
 void ctl_flush(shared_ctrl_t *ctl) {
     flush_dcache_range((uintptr_t)ctl, (uintptr_t)ctl + sizeof(*ctl));
 }
@@ -11,8 +91,11 @@ void ctl_invalidate(shared_ctrl_t *ctl) {
 void ctl_init_defaults(shared_ctrl_t *ctl) {
     uint32_t boot_count = 0;
 
-    if (ctl->magic == KRAKEN_MAGIC && ctl->version == KRAKEN_VERSION)
+    ctl_invalidate(ctl);
+    if (ctl->magic == KRAKEN_MAGIC && ctl->version == KRAKEN_VERSION) {
         boot_count = ctl->boot_count;
+        persist_note_previous_boot(ctl);
+    }
 
     sg2002_memset((void *)ctl, 0, sizeof(*ctl));
     ctl->magic = KRAKEN_MAGIC;
@@ -29,11 +112,16 @@ void ctl_init_defaults(shared_ctrl_t *ctl) {
     if (ctl->boot_count == 0)
         ctl->boot_count = 1u;
     ctl_flush(ctl);
+    persist_append(ctl->boot_count, PERSIST_EVT_STAGE, 0u,
+                   ctl->system_stage, ctl->system_flags,
+                   ctl->reset_reason, ctl->system_stage);
 }
 
 void ctl_set_stage(shared_ctrl_t *ctl, uint32_t stage) {
     ctl->system_stage = stage;
     ctl_flush(ctl);
+    persist_append(ctl->boot_count, PERSIST_EVT_STAGE, 0u,
+                   stage, ctl->system_flags, ctl->reset_reason, stage);
 }
 
 uint32_t ctl_next_cmd_seq(shared_ctrl_t *ctl) {
@@ -64,6 +152,8 @@ void ctl_fault_log(shared_ctrl_t *ctl, uint32_t tag, uint32_t code,
     if (ctl->fault_log_count < KRAKEN_FAULT_LOG_SIZE)
         ctl->fault_log_count++;
     ctl_flush(ctl);
+    persist_append(ctl->boot_count, PERSIST_EVT_FAULT, tag, code,
+                   arg0, arg1, ctl->system_stage);
 }
 
 void ctl_trace_log(shared_ctrl_t *ctl, uint32_t source, uint32_t code,
@@ -80,6 +170,8 @@ void ctl_trace_log(shared_ctrl_t *ctl, uint32_t source, uint32_t code,
     if (ctl->trace_log_count < KRAKEN_TRACE_LOG_SIZE)
         ctl->trace_log_count++;
     ctl_flush(ctl);
+    persist_append(ctl->boot_count, PERSIST_EVT_TRACE, source, code,
+                   arg0, arg1, ctl->system_stage);
 }
 
 void ctl_note_trap(shared_ctrl_t *ctl, uint32_t source_tag,
@@ -110,4 +202,13 @@ void ctl_set_platform_error(shared_ctrl_t *ctl, uint32_t error_mask) {
 void ctl_clear_platform_error(shared_ctrl_t *ctl, uint32_t error_mask) {
     ctl->platform_errors &= ~error_mask;
     ctl_flush(ctl);
+}
+
+void ctl_persist_clear(void) {
+    kraken_persist_log_t *log = persistent_log();
+
+    sg2002_memset((void *)log, 0, sizeof(*log));
+    log->magic = KRAKEN_PERSIST_MAGIC;
+    log->version = KRAKEN_PERSIST_VERSION;
+    persist_flush_header(log);
 }

@@ -19,13 +19,14 @@
 - shared-memory capture of `misa`, `mvendorid`, `marchid`, `mimpid`, and `mhartid`
 - secondary C906 release path readback for boot-address and enable-bit latching
 - SG200X `CPUSYS2` reset pulse during worker release
+- reset-persistent DDR log ring for boot, stage, trace, and fault breadcrumbs
 
 ## Phase 3 — kernel growth
 - timer interrupts instead of pure spin delays
 - scheduler and task model on the main core
 - richer worker RPC / mailbox ABI
 - richer crash records beyond the shared-memory fault log ring
-- storage and filesystem bring-up
+- storage and filesystem bring-up for true SD/flash-backed persistent logs
 
 ## Phase 4 — USB native device stack
 - finish SG2002 USB device init with the final TRM-backed clock/reset/PHY sequence
