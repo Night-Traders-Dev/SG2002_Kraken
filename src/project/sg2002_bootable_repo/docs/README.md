@@ -64,6 +64,10 @@ maintenance backend at build time with:
 That switches the shared cache helpers from fence-only placeholders to the
 T-Head cache-management instructions used by the C906 core.
 
+The shared control page now also carries a small fault log ring so the bootloader,
+kernel, and worker can leave bring-up breadcrumbs that you can inspect with the
+`faults` console command.
+
 
 ## Recent USB work
 

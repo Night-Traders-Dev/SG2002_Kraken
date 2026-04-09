@@ -17,7 +17,7 @@
 - timer interrupts instead of pure spin delays
 - scheduler and task model on the main core
 - richer worker RPC / mailbox ABI
-- fault log buffer and crash records
+- richer crash records beyond the shared-memory fault log ring
 - storage and filesystem bring-up
 
 ## Phase 4 — USB native device stack

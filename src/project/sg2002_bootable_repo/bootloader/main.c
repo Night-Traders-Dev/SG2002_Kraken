@@ -1,6 +1,7 @@
 #include "kraken.h"
 
 static void boot_panic(shared_ctrl_t *ctl, uint32_t reason, uint32_t flags) {
+    ctl_fault_log(ctl, FAULTSRC_BOOTLOADER, reason, flags, ctl->system_stage);
     ctl->reset_reason = reason;
     ctl->system_flags |= flags;
     ctl_set_stage(ctl, STAGE_PANIC);

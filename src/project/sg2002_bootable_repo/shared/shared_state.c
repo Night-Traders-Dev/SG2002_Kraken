@@ -33,3 +33,21 @@ uint32_t ctl_next_cmd_seq(shared_ctrl_t *ctl) {
     ctl_flush(ctl);
     return ctl->kernel_cmd_seq;
 }
+
+void ctl_fault_log(shared_ctrl_t *ctl, uint32_t tag, uint32_t code,
+                   uint32_t arg0, uint32_t arg1) {
+    uint32_t slot = ctl->fault_log_head & (KRAKEN_FAULT_LOG_SIZE - 1u);
+
+    ctl->fault_log[slot].tag = tag;
+    ctl->fault_log[slot].code = code;
+    ctl->fault_log[slot].arg0 = arg0;
+    ctl->fault_log[slot].arg1 = arg1;
+    ctl->fault_last_tag = tag;
+    ctl->fault_last_code = code;
+    ctl->fault_last_arg0 = arg0;
+    ctl->fault_last_arg1 = arg1;
+    ctl->fault_log_head = (slot + 1u) & (KRAKEN_FAULT_LOG_SIZE - 1u);
+    if (ctl->fault_log_count < KRAKEN_FAULT_LOG_SIZE)
+        ctl->fault_log_count++;
+    ctl_flush(ctl);
+}

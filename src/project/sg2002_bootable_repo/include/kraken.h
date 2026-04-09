@@ -43,11 +43,12 @@
 #endif
 
 #define KRAKEN_MAGIC                  0x4B52414Bu
-#define KRAKEN_VERSION                3u
+#define KRAKEN_VERSION                4u
 #define KRAKEN_STAGED_IMAGE_MAGIC     0x4B535447u
 #define KRAKEN_STAGED_IMAGE_TAIL      0x4B454E44u
 #define KRAKEN_STAGED_IMAGE_VERSION   1u
 #define WORKER_IMAGE_PROBE_WORDS      8u
+#define KRAKEN_FAULT_LOG_SIZE         16u
 #define USB_SERIAL_RING_SIZE          512u
 #define USB_SERIAL_PROTO_ACM          1u
 
@@ -114,6 +115,13 @@ enum system_flags {
     SYSF_WATCHDOG_TIMEOUT     = 1u << 31,
 };
 
+enum kraken_fault_source {
+    FAULTSRC_BOOTLOADER = 1,
+    FAULTSRC_KERNEL     = 2,
+    FAULTSRC_WORKER     = 3,
+    FAULTSRC_WATCHDOG   = 4,
+};
+
 enum kraken_image_kind {
     KRAKEN_IMAGE_BOOTLOADER = 1,
     KRAKEN_IMAGE_KERNEL     = 2,
@@ -133,6 +141,13 @@ typedef struct {
     uint32_t payload_crc32_inv;
     uint32_t tail_magic;
 } kraken_staged_image_footer_t;
+
+typedef struct {
+    volatile uint32_t tag;
+    volatile uint32_t code;
+    volatile uint32_t arg0;
+    volatile uint32_t arg1;
+} kraken_fault_record_t;
 
 typedef struct {
     volatile uint32_t magic;                    /* 0x00 */
@@ -166,7 +181,16 @@ typedef struct {
     volatile uint32_t usb_tx_tail;              /* 0x70 */
     volatile uint32_t usb_last_error;           /* 0x74 */
     volatile uint32_t usb_console_enabled;      /* 0x78 */
-    volatile uint32_t reserved0[9];
+    volatile uint32_t platform_caps;
+    volatile uint32_t platform_errors;
+    volatile uint32_t fault_log_head;
+    volatile uint32_t fault_log_count;
+    volatile uint32_t fault_last_tag;
+    volatile uint32_t fault_last_code;
+    volatile uint32_t fault_last_arg0;
+    volatile uint32_t fault_last_arg1;
+    volatile uint32_t reserved0;
+    volatile kraken_fault_record_t fault_log[KRAKEN_FAULT_LOG_SIZE];
     volatile uint8_t usb_rx_ring[USB_SERIAL_RING_SIZE];
     volatile uint8_t usb_tx_ring[USB_SERIAL_RING_SIZE];
 } shared_ctrl_t;
@@ -214,6 +238,8 @@ void ctl_invalidate(shared_ctrl_t *ctl);
 void ctl_init_defaults(shared_ctrl_t *ctl);
 void ctl_set_stage(shared_ctrl_t *ctl, uint32_t stage);
 uint32_t ctl_next_cmd_seq(shared_ctrl_t *ctl);
+void ctl_fault_log(shared_ctrl_t *ctl, uint32_t tag, uint32_t code,
+                   uint32_t arg0, uint32_t arg1);
 
 void usb_serial_init(void);
 void usb_serial_poll(void);

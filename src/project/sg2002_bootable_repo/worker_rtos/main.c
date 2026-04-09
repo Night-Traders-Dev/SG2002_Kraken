@@ -50,6 +50,8 @@ void worker_main(void) {
             run_demo_job(ctl);
             break;
         case CMD_PANIC:
+            ctl_fault_log(ctl, FAULTSRC_WORKER, 0xD00D0001u,
+                          ctl->worker_cmd, ctl->kernel_cmd_seq);
             ctl->worker_state = CORE_FAULT;
             ctl->worker_cmd_ack = ctl->kernel_cmd_seq;
             ctl_flush(ctl);
@@ -60,6 +62,8 @@ void worker_main(void) {
             ctl_flush(ctl);
             for (;;) cpu_relax();
         default:
+            ctl_fault_log(ctl, FAULTSRC_WORKER, 0xD00D0002u,
+                          ctl->worker_cmd, ctl->kernel_cmd_seq);
             ctl->worker_state = CORE_FAULT;
             ctl->worker_cmd_ack = ctl->kernel_cmd_seq;
             ctl_flush(ctl);

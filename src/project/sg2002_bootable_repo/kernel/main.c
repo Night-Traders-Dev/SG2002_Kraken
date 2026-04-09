@@ -1,6 +1,7 @@
 #include "kraken.h"
 
 static void kernel_panic(shared_ctrl_t *ctl, uint32_t reason, uint32_t flags) {
+    ctl_fault_log(ctl, FAULTSRC_KERNEL, reason, flags, ctl->system_stage);
     ctl->reset_reason = reason;
     ctl->system_flags |= flags;
     ctl_set_stage(ctl, STAGE_PANIC);
@@ -75,6 +76,8 @@ static void wait_for_worker_ack(shared_ctrl_t *ctl) {
 }
 
 static void restart_worker(shared_ctrl_t *ctl, uint32_t reason) {
+    ctl_fault_log(ctl, FAULTSRC_KERNEL, reason,
+                  ctl->worker_restart_count + 1u, ctl->worker_heartbeat);
     ctl->worker_restart_count++;
     ctl->reset_reason = reason;
     ctl->system_flags |= SYSF_WORKER_RESTARTING;
@@ -94,7 +97,34 @@ static void print_status(shared_ctrl_t *ctl) {
     console_puthex(ctl->worker_heartbeat);
     console_puts(" rst=");
     console_puthex(ctl->worker_restart_count);
+    console_puts(" faults=");
+    console_puthex(ctl->fault_log_count);
     console_puts("\n");
+}
+
+static void print_faults(shared_ctrl_t *ctl) {
+    uint32_t count = ctl->fault_log_count;
+    uint32_t head = ctl->fault_log_head;
+
+    if (count == 0) {
+        console_puts("[fault] none\n");
+        return;
+    }
+
+    for (uint32_t i = 0; i < count; ++i) {
+        uint32_t slot = (head + KRAKEN_FAULT_LOG_SIZE - count + i) &
+                        (KRAKEN_FAULT_LOG_SIZE - 1u);
+        const volatile kraken_fault_record_t *rec = &ctl->fault_log[slot];
+        console_puts("[fault] tag=");
+        console_puthex(rec->tag);
+        console_puts(" code=");
+        console_puthex(rec->code);
+        console_puts(" a0=");
+        console_puthex(rec->arg0);
+        console_puts(" a1=");
+        console_puthex(rec->arg1);
+        console_puts("\n");
+    }
 }
 
 static void handle_console(shared_ctrl_t *ctl) {
@@ -109,6 +139,8 @@ static void handle_console(shared_ctrl_t *ctl) {
             line[line_len] = '\0';
             if (sg2002_memcmp(line, "status", 7) == 0) {
                 print_status(ctl);
+            } else if (sg2002_memcmp(line, "faults", 7) == 0) {
+                print_faults(ctl);
             } else if (sg2002_memcmp(line, "run", 4) == 0) {
                 console_puts("[kernel] queue worker job\n");
                 send_worker_cmd(ctl, CMD_RUN_JOB, 0x1234u, 0);
@@ -119,7 +151,7 @@ static void handle_console(shared_ctrl_t *ctl) {
                 console_puts("[kernel] stop worker\n");
                 send_worker_cmd(ctl, CMD_STOP, 0, 0);
             } else if (line_len != 0) {
-                console_puts("[kernel] commands: status run panic stop\n");
+                console_puts("[kernel] commands: status faults run panic stop\n");
             }
             line_len = 0;
             continue;
