@@ -30,6 +30,7 @@ This tree is now organized around the platform you described:
 - `build/package/manifest.json`
 - `build/package/8051_boot_cfg.ini`
 - `build/package/load_demo.sh`
+- `build/package/worker_staged.bin`
 
 ## Design intent
 
@@ -41,6 +42,10 @@ This is an **AMP platform layout**:
 
 The current code provides the control skeleton, shared-memory ABI, staged boot flow,
 worker release path, watchdog hooks, and USB console subsystem contract.
+
+If you enable `WORKER_STAGING_ADDR`, the package now also emits `worker_staged.bin`,
+which wraps the raw worker payload with a small footer carrying size and CRC32 so the
+kernel can validate and copy it safely.
 
 
 ## Recent USB work

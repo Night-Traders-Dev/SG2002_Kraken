@@ -4,6 +4,7 @@ set -eu
 BOOTLOADER_BIN=${BOOTLOADER_BIN:-bootloader.bin}
 KERNEL_BIN=${KERNEL_BIN:-kernel.bin}
 WORKER_BIN=${WORKER_BIN:-worker.bin}
+WORKER_STAGED_BIN=${WORKER_STAGED_BIN:-worker_staged.bin}
 MCU_BIN=${MCU_BIN:-mars_mcu_fw.bin}
 BOOT_CFG=${BOOT_CFG:-8051_boot_cfg.ini}
 STAGE_DIR=${STAGE_DIR:-./stage}
@@ -30,6 +31,9 @@ stage_files() {
     log "staging files in $STAGE_DIR"
     run "mkdir -p '$STAGE_DIR'"
     run "cp '$BOOTLOADER_BIN' '$KERNEL_BIN' '$WORKER_BIN' '$MCU_BIN' '$BOOT_CFG' '$STAGE_DIR/'"
+    if [ -f "$WORKER_STAGED_BIN" ]; then
+        run "cp '$WORKER_STAGED_BIN' '$STAGE_DIR/'"
+    fi
     if [ -f ./8051_up ]; then
         run "cp ./8051_up '$STAGE_DIR/'"
         run "chmod +x '$STAGE_DIR/8051_up'"
@@ -46,6 +50,7 @@ Next manual integration steps for your custom loader:
 - place bootloader.bin at 0x80080000
 - place kernel.bin at 0x80100000
 - place worker.bin at 0x80180000
+- optionally place worker_staged.bin at WORKER_STAGING_ADDR if you enable manager-side worker staging
 - clear the shared control region at 0x80170000 before first boot
 - invoke 8051_up inside the staged directory if you are using the vendor 8051 loader
 - jump to bootloader.bin; it will start the 8051 and hand off to kernel.bin

@@ -8,15 +8,29 @@ static void kernel_panic(shared_ctrl_t *ctl, uint32_t reason, uint32_t flags) {
     for (;;) cpu_relax();
 }
 
-static void maybe_stage_worker(void) {
+static void maybe_stage_worker(shared_ctrl_t *ctl) {
+    (void)ctl;
 #if WORKER_STAGING_ADDR != 0
-    if (!sg2002_image_present(WORKER_LOAD_ADDR) && sg2002_image_present(WORKER_STAGING_ADDR)) {
+    kraken_staged_image_footer_t footer;
+
+    if (!sg2002_image_present(WORKER_LOAD_ADDR) &&
+        sg2002_validate_staged_image(WORKER_STAGING_ADDR,
+                                     WORKER_IMAGE_MAX_BYTES + sizeof(footer),
+                                     KRAKEN_IMAGE_WORKER,
+                                     WORKER_LOAD_ADDR,
+                                     WORKER_LOAD_ADDR,
+                                     &footer)) {
         size_t copied = 0;
         console_puts("[kernel] staging worker image\n");
-        sg2002_copy_image(WORKER_LOAD_ADDR, WORKER_STAGING_ADDR, WORKER_IMAGE_MAX_BYTES, &copied);
+        sg2002_copy_image(WORKER_LOAD_ADDR, WORKER_STAGING_ADDR,
+                          footer.payload_size, &copied);
+        ctl->system_flags &= ~SYSF_WORKER_IMAGE_MISSING;
+        ctl_flush(ctl);
         console_puts("[kernel] worker bytes=0x");
         console_puthex((uint32_t)copied);
         console_puts("\n");
+    } else if (!sg2002_image_present(WORKER_LOAD_ADDR)) {
+        console_puts("[kernel] no valid staged worker image\n");
     }
 #endif
 }
@@ -31,7 +45,7 @@ static void send_worker_cmd(shared_ctrl_t *ctl, uint32_t cmd, uint32_t arg0, uin
 
 static void boot_worker(shared_ctrl_t *ctl) {
     ctl_set_stage(ctl, STAGE_WORKER_PREP);
-    maybe_stage_worker();
+    maybe_stage_worker(ctl);
     if (!sg2002_image_present(WORKER_LOAD_ADDR))
         kernel_panic(ctl, 0xC0DE0001u, SYSF_WORKER_IMAGE_MISSING);
 

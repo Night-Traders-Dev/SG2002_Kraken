@@ -11,6 +11,8 @@ U-Boot scripts.
   worker acknowledgements.
 - package/docs flow now consistently treats `worker.bin` as preloaded unless you
   deliberately enable manager-side copying from a staging address.
+- optional manager-side worker staging now uses a footer with payload size and
+  CRC32 validation instead of a blind fixed-length copy.
 - a USB serial subsystem and Linux-assisted CDC ACM helper flow have been added.
 
 ## Directories

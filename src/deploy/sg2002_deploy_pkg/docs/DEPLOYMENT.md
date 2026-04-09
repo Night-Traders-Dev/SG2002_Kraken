@@ -5,6 +5,7 @@ This package stages the new four-image layout:
 - `bootloader.bin`
 - `kernel.bin`
 - `worker.bin`
+- `worker_staged.bin` for optional manager-side worker staging
 - `mars_mcu_fw.bin`
 
 ## Included helpers
@@ -19,6 +20,7 @@ This package stages the new four-image layout:
 You still need to provide:
 
 - your own DDR writer or boot script to place all four binaries;
+- a `WORKER_STAGING_ADDR` load step for `worker_staged.bin` if you choose kernel-side worker copying;
 - clearing the shared control page at `0x80170000` before first boot;
 - any board-specific secondary-core reset deassert beyond the public top-misc enable bit;
 - an eventual native bare-metal USB device backend.

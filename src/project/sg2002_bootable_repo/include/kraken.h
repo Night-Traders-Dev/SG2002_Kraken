@@ -44,6 +44,9 @@
 
 #define KRAKEN_MAGIC                  0x4B52414Bu
 #define KRAKEN_VERSION                3u
+#define KRAKEN_STAGED_IMAGE_MAGIC     0x4B535447u
+#define KRAKEN_STAGED_IMAGE_TAIL      0x4B454E44u
+#define KRAKEN_STAGED_IMAGE_VERSION   1u
 #define WORKER_IMAGE_PROBE_WORDS      8u
 #define USB_SERIAL_RING_SIZE          512u
 #define USB_SERIAL_PROTO_ACM          1u
@@ -110,6 +113,26 @@ enum system_flags {
     SYSF_USB_FAULT            = 1u << 6,
     SYSF_WATCHDOG_TIMEOUT     = 1u << 31,
 };
+
+enum kraken_image_kind {
+    KRAKEN_IMAGE_BOOTLOADER = 1,
+    KRAKEN_IMAGE_KERNEL     = 2,
+    KRAKEN_IMAGE_WORKER     = 3,
+    KRAKEN_IMAGE_WATCHDOG   = 4,
+};
+
+typedef struct {
+    uint32_t magic;
+    uint32_t version;
+    uint32_t image_kind;
+    uint32_t flags;
+    uint32_t load_addr;
+    uint32_t entry_addr;
+    uint32_t payload_size;
+    uint32_t payload_crc32;
+    uint32_t payload_crc32_inv;
+    uint32_t tail_magic;
+} kraken_staged_image_footer_t;
 
 typedef struct {
     volatile uint32_t magic;                    /* 0x00 */
@@ -208,6 +231,14 @@ void console_puthex64(uint64_t v);
 void sg2002_usb_board_init(void);
 
 int sg2002_image_present(uintptr_t addr);
+uint32_t sg2002_crc32(const void *buf, size_t len);
+int sg2002_find_staged_image(uintptr_t addr, size_t max_len,
+                             kraken_staged_image_footer_t *footer);
+int sg2002_validate_staged_image(uintptr_t addr, size_t max_len,
+                                 uint32_t expected_kind,
+                                 uintptr_t expected_load_addr,
+                                 uintptr_t expected_entry_addr,
+                                 kraken_staged_image_footer_t *footer);
 void sg2002_copy_image(uintptr_t dst, uintptr_t src, size_t max_len, size_t *copied_len);
 int sg2002_release_worker_core(uintptr_t entry_addr);
 void sg2002_boot_8051(uintptr_t entry_addr);
