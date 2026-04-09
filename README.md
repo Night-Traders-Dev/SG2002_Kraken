@@ -20,6 +20,27 @@ and supervises the 8051 watchdog core.
 - optional manager-side worker staging now uses a footer with payload size and
   CRC32 validation instead of a blind fixed-length copy.
 - a USB serial subsystem and Linux-assisted CDC ACM helper flow have been added.
+- the SD builder now has a Nano W RISC-V ROM-boot mode that emits a `boot.sd`
+  FIT image and copies a supplied vendor `fip.bin` into the FAT partition.
+
+## Build modes
+
+`src/build.sh` supports two distinct SD card layouts:
+
+- `BUILD_TARGET=staging` keeps the older FAT staging image for boards that
+  already have a vendor boot chain in place.
+- `BUILD_TARGET=licheerv_nano_w_riscv` builds a Nano W ROM-bootable FAT image.
+  This mode requires `LICHEERV_NANO_FIP_BIN=/path/to/fip.bin` so the card
+  contains both `fip.bin` and a `boot.sd` FIT that preloads the Kraken images
+  into DDR before jumping to `bootloader.bin`.
+
+Examples:
+
+- `PROJECT_OUT=build-local ./src/build.sh`
+- `PROJECT_OUT=build-local BUILD_TARGET=licheerv_nano_w_riscv LICHEERV_NANO_FIP_BIN=/path/to/fip.bin ./src/build.sh`
+
+If an earlier flashing run left `src/out/` root-owned, point `OUT_DIR` at a
+writable directory such as `/tmp/kraken-out`.
 
 ## Directories
 

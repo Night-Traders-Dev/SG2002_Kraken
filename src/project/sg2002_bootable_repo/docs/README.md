@@ -20,7 +20,8 @@ Board assumptions for this tree:
 
 ## Boot flow
 
-1. vendor FSBL/OpenSBI/U-Boot stages your images into DDR;
+1. vendor FSBL/OpenSBI/U-Boot stages your images into DDR, either from a
+   manual U-Boot script path or from the Nano W `fip.bin` + `boot.sd` SD path;
 2. `bootloader.bin` starts on the main C906;
 3. bootloader clears and initializes the shared control page;
 4. bootloader starts the 8051 watchdog firmware;
@@ -40,6 +41,12 @@ Board assumptions for this tree:
 - `build/package/8051_boot_cfg.ini`
 - `build/package/load_demo.sh`
 - `build/package/worker_staged.bin`
+
+`src/build.sh` can then package those artifacts in two ways:
+
+- `BUILD_TARGET=staging` for an existing vendor staging flow;
+- `BUILD_TARGET=licheerv_nano_w_riscv` for a Nano W FAT card containing
+  `fip.bin` and `boot.sd`.
 
 ## Design intent
 
@@ -92,6 +99,11 @@ The `status` command now also reports a platform capability bitmask and platform
 error bitmask so Nano W bring-up can distinguish missing optional hooks from
 runtime failures.
 
+For the Nano W ROM-boot path, `src/build.sh` now generates a `boot.sd` FIT
+payload that uses vendor U-Boot's normal `fatload ... boot.sd ; bootm ...`
+flow. That FIT preloads `kernel.bin`, `worker.bin`, and `mars_mcu_fw.bin` into
+their fixed DDR addresses and then jumps directly to `bootloader.bin`. You must
+still supply a vendor-built `fip.bin` for the card to be ROM-bootable.
 
 ## Recent USB work
 
