@@ -73,6 +73,10 @@ images. Bootloader, kernel, and worker exceptions are printed on UART and latche
 into the shared control page so the kernel `trap` command can show the last worker
 trap cause, EPC, trap value, and status snapshot.
 
+The shared control page now also records `misa`, `mvendorid`, `marchid`, `mimpid`,
+and `mhartid` for the bootloader, kernel, and worker images. Use the kernel `cpu`
+command to confirm which RISC-V harts and ISA profile the Nano W actually booted.
+
 The `status` command now also reports a platform capability bitmask and platform
 error bitmask so Nano W bring-up can distinguish missing optional hooks from
 runtime failures.

@@ -35,6 +35,7 @@ static void run_demo_job(shared_ctrl_t *ctl) {
 void worker_main(void) {
     shared_ctrl_t *ctl = shared_ctrl();
     console_puts("Kraken worker start\n");
+    ctl_note_riscv_identity(ctl, RISCV_ID_WORKER);
     ctl->worker_boot_ack = KRAKEN_MAGIC;
     ctl->worker_state = CORE_IDLE;
     ctl->worker_cmd_ack = ctl->kernel_cmd_seq;

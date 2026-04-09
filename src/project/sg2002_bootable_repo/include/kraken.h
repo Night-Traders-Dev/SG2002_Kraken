@@ -43,7 +43,7 @@
 #endif
 
 #define KRAKEN_MAGIC                  0x4B52414Bu
-#define KRAKEN_VERSION                5u
+#define KRAKEN_VERSION                6u
 #define KRAKEN_STAGED_IMAGE_MAGIC     0x4B535447u
 #define KRAKEN_STAGED_IMAGE_TAIL      0x4B454E44u
 #define KRAKEN_STAGED_IMAGE_VERSION   1u
@@ -132,6 +132,7 @@ enum kraken_platform_caps {
     PLATCAP_FAULT_LOG         = 1u << 5,
     PLATCAP_WORKER_STAGING    = 1u << 6,
     PLATCAP_RISCV_TRAPS       = 1u << 7,
+    PLATCAP_RISCV_IDENTITY    = 1u << 8,
 };
 
 enum kraken_platform_errors {
@@ -168,6 +169,21 @@ typedef struct {
     volatile uint32_t arg0;
     volatile uint32_t arg1;
 } kraken_fault_record_t;
+
+enum kraken_riscv_identity_slot {
+    RISCV_ID_BOOTLOADER = 0,
+    RISCV_ID_KERNEL     = 1,
+    RISCV_ID_WORKER     = 2,
+    RISCV_IDENTITY_SLOTS = 3,
+};
+
+typedef struct {
+    volatile uint32_t hartid;
+    volatile uint32_t mvendorid;
+    volatile uint32_t marchid;
+    volatile uint32_t mimpid;
+    volatile uint32_t misa;
+} kraken_riscv_identity_t;
 
 typedef struct {
     volatile uint32_t magic;                    /* 0x00 */
@@ -217,6 +233,7 @@ typedef struct {
     volatile uint32_t trap_last_status;
     volatile uint32_t reserved0;
     volatile uint32_t reserved1;
+    volatile kraken_riscv_identity_t riscv_identity[RISCV_IDENTITY_SLOTS];
     volatile kraken_fault_record_t fault_log[KRAKEN_FAULT_LOG_SIZE];
     volatile uint8_t usb_rx_ring[USB_SERIAL_RING_SIZE];
     volatile uint8_t usb_tx_ring[USB_SERIAL_RING_SIZE];
@@ -270,6 +287,7 @@ void ctl_fault_log(shared_ctrl_t *ctl, uint32_t tag, uint32_t code,
 void ctl_note_trap(shared_ctrl_t *ctl, uint32_t source_tag,
                    uint64_t mcause, uint64_t mepc,
                    uint64_t mtval, uint64_t mstatus);
+void ctl_note_riscv_identity(shared_ctrl_t *ctl, uint32_t slot);
 void ctl_set_platform_error(shared_ctrl_t *ctl, uint32_t error_mask);
 void ctl_clear_platform_error(shared_ctrl_t *ctl, uint32_t error_mask);
 
@@ -305,6 +323,11 @@ void kraken_jump_to(uintptr_t entry_addr) __attribute__((noreturn));
 void kraken_trap_panic(uint64_t mcause, uint64_t mepc,
                        uint64_t mtval, uint64_t mstatus)
     __attribute__((noreturn));
+uint64_t riscv_read_misa(void);
+uint64_t riscv_read_mvendorid(void);
+uint64_t riscv_read_marchid(void);
+uint64_t riscv_read_mimpid(void);
+uint64_t riscv_read_mhartid(void);
 uint32_t kraken_trap_source_tag(void);
 const char *kraken_trap_source_name(void);
 

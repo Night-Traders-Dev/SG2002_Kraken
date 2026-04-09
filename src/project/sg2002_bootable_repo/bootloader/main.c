@@ -21,6 +21,7 @@ void bootloader_main(void) {
     shared_ctrl_t *ctl = shared_ctrl();
 
     ctl_init_defaults(ctl);
+    ctl_note_riscv_identity(ctl, RISCV_ID_BOOTLOADER);
     ctl->system_flags |= SYSF_BOOTLOADER_ACTIVE;
     ctl_set_stage(ctl, STAGE_BOOTLOADER);
     usb_serial_init();

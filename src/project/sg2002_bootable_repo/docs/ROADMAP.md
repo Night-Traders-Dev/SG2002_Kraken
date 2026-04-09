@@ -16,6 +16,7 @@
 ## Recent RISC-V bring-up work
 - machine-mode trap vector installation for bootloader, kernel, and worker
 - shared-memory trap telemetry for cause, EPC, trap value, and status snapshots
+- shared-memory capture of `misa`, `mvendorid`, `marchid`, `mimpid`, and `mhartid`
 
 ## Phase 3 — kernel growth
 - timer interrupts instead of pure spin delays

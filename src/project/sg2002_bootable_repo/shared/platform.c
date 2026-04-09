@@ -5,7 +5,8 @@ uint32_t sg2002_platform_caps(void) {
                     PLATCAP_WORKER_RELEASE |
                     PLATCAP_USB_DWC2_SCAFFOLD |
                     PLATCAP_FAULT_LOG |
-                    PLATCAP_RISCV_TRAPS;
+                    PLATCAP_RISCV_TRAPS |
+                    PLATCAP_RISCV_IDENTITY;
 #if KRAKEN_ENABLE_WORKER_RESET_HOOK
     caps |= PLATCAP_WORKER_RESET_HOOK;
 #endif

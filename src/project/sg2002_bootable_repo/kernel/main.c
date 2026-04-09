@@ -119,6 +119,29 @@ static void print_status(shared_ctrl_t *ctl) {
     console_puts("\n");
 }
 
+static void print_cpu_identity(const char *label,
+                               const volatile kraken_riscv_identity_t *identity) {
+    console_puts("[cpu] ");
+    console_puts(label);
+    console_puts(" hart=");
+    console_puthex(identity->hartid);
+    console_puts(" mvendor=");
+    console_puthex(identity->mvendorid);
+    console_puts(" march=");
+    console_puthex(identity->marchid);
+    console_puts(" mimp=");
+    console_puthex(identity->mimpid);
+    console_puts(" misa=");
+    console_puthex(identity->misa);
+    console_puts("\n");
+}
+
+static void print_cpu(shared_ctrl_t *ctl) {
+    print_cpu_identity("boot", &ctl->riscv_identity[RISCV_ID_BOOTLOADER]);
+    print_cpu_identity("kernel", &ctl->riscv_identity[RISCV_ID_KERNEL]);
+    print_cpu_identity("worker", &ctl->riscv_identity[RISCV_ID_WORKER]);
+}
+
 static void print_trap(shared_ctrl_t *ctl) {
     if (ctl->trap_count == 0) {
         console_puts("[trap] none\n");
@@ -175,6 +198,8 @@ static void handle_console(shared_ctrl_t *ctl) {
             line[line_len] = '\0';
             if (sg2002_memcmp(line, "status", 7) == 0) {
                 print_status(ctl);
+            } else if (sg2002_memcmp(line, "cpu", 4) == 0) {
+                print_cpu(ctl);
             } else if (sg2002_memcmp(line, "trap", 5) == 0) {
                 print_trap(ctl);
             } else if (sg2002_memcmp(line, "faults", 7) == 0) {
@@ -189,7 +214,7 @@ static void handle_console(shared_ctrl_t *ctl) {
                 console_puts("[kernel] stop worker\n");
                 send_worker_cmd(ctl, CMD_STOP, 0, 0);
             } else if (line_len != 0) {
-                console_puts("[kernel] commands: status trap faults run panic stop\n");
+                console_puts("[kernel] commands: status cpu trap faults run panic stop\n");
             }
             line_len = 0;
             continue;
@@ -205,6 +230,7 @@ void kernel_main(void) {
     ctl_invalidate(ctl);
     if (ctl->magic != KRAKEN_MAGIC || ctl->version != KRAKEN_VERSION)
         ctl_init_defaults(ctl);
+    ctl_note_riscv_identity(ctl, RISCV_ID_KERNEL);
 
     ctl->system_flags &= ~SYSF_BOOTLOADER_ACTIVE;
     ctl->system_flags |= SYSF_KERNEL_ACTIVE;
