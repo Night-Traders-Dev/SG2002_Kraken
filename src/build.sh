@@ -9,6 +9,8 @@ PROJECT_OUT=${PROJECT_OUT:-build}
 PACKAGE_DIR="$PROJECT_DIR/$PROJECT_OUT/package"
 BUILD_TARGET=${BUILD_TARGET:-staging}
 LICHEERV_NANO_FIP_BIN=${LICHEERV_NANO_FIP_BIN:-}
+LICHEERV_NANO_BASE_SD_IMAGE=${LICHEERV_NANO_BASE_SD_IMAGE:-}
+LICHEERV_NANO_VENDOR_DTB=${LICHEERV_NANO_VENDOR_DTB:-}
 LICHEERV_NANO_BOOT_LOGO_JPEG=${LICHEERV_NANO_BOOT_LOGO_JPEG:-}
 IMG_PATH=${IMG_PATH:-$OUT_DIR/sg2002_sdcard.img}
 IMG_SIZE_MIB=${IMG_SIZE_MIB:-128}
@@ -40,6 +42,7 @@ need_cmd() {
 need_cmd make
 need_cmd "$PYTHON"
 need_cmd "$MKIMAGE"
+need_cmd dumpimage
 need_cmd sfdisk
 need_cmd mkfs.vfat
 need_cmd mkfs.ext4
@@ -64,6 +67,15 @@ esac
 if [[ "$BUILD_TARGET" == "licheerv_nano_w_riscv" ]]; then
   [[ -n "$LICHEERV_NANO_FIP_BIN" ]] || die "BUILD_TARGET=licheerv_nano_w_riscv requires LICHEERV_NANO_FIP_BIN=/path/to/fip.bin"
   [[ -f "$LICHEERV_NANO_FIP_BIN" ]] || die "LICHEERV_NANO_FIP_BIN does not exist: $LICHEERV_NANO_FIP_BIN"
+  if [[ -n "$LICHEERV_NANO_BASE_SD_IMAGE" ]]; then
+    [[ -f "$LICHEERV_NANO_BASE_SD_IMAGE" ]] || die "LICHEERV_NANO_BASE_SD_IMAGE does not exist: $LICHEERV_NANO_BASE_SD_IMAGE"
+  fi
+  if [[ -n "$LICHEERV_NANO_VENDOR_DTB" ]]; then
+    [[ -f "$LICHEERV_NANO_VENDOR_DTB" ]] || die "LICHEERV_NANO_VENDOR_DTB does not exist: $LICHEERV_NANO_VENDOR_DTB"
+  fi
+  if [[ -z "$LICHEERV_NANO_BASE_SD_IMAGE" && -z "$LICHEERV_NANO_VENDOR_DTB" ]]; then
+    die "BUILD_TARGET=licheerv_nano_w_riscv requires LICHEERV_NANO_BASE_SD_IMAGE or LICHEERV_NANO_VENDOR_DTB"
+  fi
   if [[ -n "$LICHEERV_NANO_BOOT_LOGO_JPEG" ]]; then
     [[ -f "$LICHEERV_NANO_BOOT_LOGO_JPEG" ]] || die "LICHEERV_NANO_BOOT_LOGO_JPEG does not exist: $LICHEERV_NANO_BOOT_LOGO_JPEG"
   fi
@@ -102,47 +114,67 @@ log "building U-Boot script image"
 )
 
 if [[ "$BUILD_TARGET" == "licheerv_nano_w_riscv" ]]; then
+  VENDOR_DTB_PATH=${LICHEERV_NANO_VENDOR_DTB:-$OUT_DIR/vendor-sg2002_licheervnano_sd.dtb}
+  if [[ -n "$LICHEERV_NANO_BASE_SD_IMAGE" && ! -f "$VENDOR_DTB_PATH" ]]; then
+    VENDOR_BOOTFS_IMG="$OUT_DIR/vendor-boot.vfat"
+    VENDOR_BOOT_SD_PATH="$OUT_DIR/vendor.boot.sd"
+    log "extracting vendor boot.sd and board DTB from $LICHEERV_NANO_BASE_SD_IMAGE"
+    dd if="$LICHEERV_NANO_BASE_SD_IMAGE" of="$VENDOR_BOOTFS_IMG" \
+      bs=512 skip="$PART_START_SECTOR" count="$BOOT_PART_SIZE_SECTORS" status=none
+    mcopy -i "$VENDOR_BOOTFS_IMG" ::boot.sd "$VENDOR_BOOT_SD_PATH"
+    dumpimage -T flat_dt -p 2 -o "$VENDOR_DTB_PATH" "$VENDOR_BOOT_SD_PATH" >/dev/null
+  fi
+  [[ -f "$VENDOR_DTB_PATH" ]] || die "failed to obtain vendor DTB for Nano W boot flow"
+
   BOOT_SD_PATH="$OUT_DIR/boot.sd"
   log "building LicheeRV Nano W boot.sd FIT payload"
   "$PYTHON" "$ROOT_DIR/tools/make_licheerv_nano_boot_sd.py" \
     --mkimage "$MKIMAGE" \
     --package-dir "$PACKAGE_DIR" \
     --kraken-header "$PROJECT_DIR/include/kraken.h" \
+    --dtb "$VENDOR_DTB_PATH" \
     --out "$BOOT_SD_PATH" \
     --its-out "$OUT_DIR/boot.sd.its" \
     --config config-sg2002_licheervnano_sd
 fi
 
-log "creating raw disk image $IMG_PATH (${IMG_SIZE_MIB} MiB)"
-rm -f "$IMG_PATH"
-dd if=/dev/zero of="$IMG_PATH" bs=1M count="$IMG_SIZE_MIB" status=none
-
-TOTAL_SECTORS=$((IMG_SIZE_MIB * 2048))
-if (( PART_START_SECTOR <= 0 || PART_START_SECTOR >= TOTAL_SECTORS )); then
-  die "invalid PART_START_SECTOR=$PART_START_SECTOR for IMG_SIZE_MIB=$IMG_SIZE_MIB"
-fi
-
-log "writing MBR partition table"
-if [[ "$BUILD_TARGET" == "licheerv_nano_w_riscv" ]]; then
+if [[ "$BUILD_TARGET" == "licheerv_nano_w_riscv" && -n "$LICHEERV_NANO_BASE_SD_IMAGE" ]]; then
+  log "copying vendor Nano W base image to $IMG_PATH"
+  cp -f "$LICHEERV_NANO_BASE_SD_IMAGE" "$IMG_PATH"
+  TOTAL_SECTORS=$(($(stat -c%s "$IMG_PATH") / 512))
   ROOTFS_START_SECTOR=$((PART_START_SECTOR + BOOT_PART_SIZE_SECTORS))
-  if (( ROOTFS_START_SECTOR >= TOTAL_SECTORS )); then
-    die "BOOT_PART_SIZE_SECTORS=$BOOT_PART_SIZE_SECTORS leaves no room for a rootfs partition"
+else
+  log "creating raw disk image $IMG_PATH (${IMG_SIZE_MIB} MiB)"
+  rm -f "$IMG_PATH"
+  dd if=/dev/zero of="$IMG_PATH" bs=1M count="$IMG_SIZE_MIB" status=none
+
+  TOTAL_SECTORS=$((IMG_SIZE_MIB * 2048))
+  if (( PART_START_SECTOR <= 0 || PART_START_SECTOR >= TOTAL_SECTORS )); then
+    die "invalid PART_START_SECTOR=$PART_START_SECTOR for IMG_SIZE_MIB=$IMG_SIZE_MIB"
   fi
-  cat <<PARTITION_TABLE | sfdisk "$IMG_PATH"
+
+  log "writing MBR partition table"
+  if [[ "$BUILD_TARGET" == "licheerv_nano_w_riscv" ]]; then
+    ROOTFS_START_SECTOR=$((PART_START_SECTOR + BOOT_PART_SIZE_SECTORS))
+    if (( ROOTFS_START_SECTOR >= TOTAL_SECTORS )); then
+      die "BOOT_PART_SIZE_SECTORS=$BOOT_PART_SIZE_SECTORS leaves no room for a rootfs partition"
+    fi
+    cat <<PARTITION_TABLE | sfdisk "$IMG_PATH"
 label: dos
 unit: sectors
 
 ${IMG_PATH}1 : start=${PART_START_SECTOR}, size=${BOOT_PART_SIZE_SECTORS}, type=c, bootable
 ${IMG_PATH}2 : start=${ROOTFS_START_SECTOR}, type=83
 PARTITION_TABLE
-else
-  BOOT_PART_SIZE_SECTORS=$((TOTAL_SECTORS - PART_START_SECTOR))
-  cat <<PARTITION_TABLE | sfdisk "$IMG_PATH"
+  else
+    BOOT_PART_SIZE_SECTORS=$((TOTAL_SECTORS - PART_START_SECTOR))
+    cat <<PARTITION_TABLE | sfdisk "$IMG_PATH"
 label: dos
 unit: sectors
 
 ${IMG_PATH}1 : start=${PART_START_SECTOR}, type=c, bootable
 PARTITION_TABLE
+  fi
 fi
 
 BOOT_INPUT_DIR="$OUT_DIR/bootfs_input"
@@ -184,8 +216,12 @@ fi
 
 log "creating FAT boot filesystem image"
 rm -f "$BOOTFS_IMG"
-truncate -s "$((BOOT_PART_SIZE_SECTORS * 512))" "$BOOTFS_IMG"
-mformat -F -i "$BOOTFS_IMG" -v "$BOOT_VOLUME_LABEL" ::
+if [[ "$BUILD_TARGET" == "licheerv_nano_w_riscv" && -n "$LICHEERV_NANO_BASE_SD_IMAGE" ]]; then
+  dd if="$IMG_PATH" of="$BOOTFS_IMG" bs=512 skip="$PART_START_SECTOR" count="$BOOT_PART_SIZE_SECTORS" status=none
+else
+  truncate -s "$((BOOT_PART_SIZE_SECTORS * 512))" "$BOOTFS_IMG"
+  mformat -F -i "$BOOTFS_IMG" -v "$BOOT_VOLUME_LABEL" ::
+fi
 for file in "$BOOT_INPUT_DIR"/*; do
   [[ -e "$file" ]] || continue
   mcopy -i "$BOOTFS_IMG" -o "$file" ::
@@ -194,7 +230,7 @@ done
 log "embedding FAT boot filesystem into raw image"
 dd if="$BOOTFS_IMG" of="$IMG_PATH" bs=512 seek="$PART_START_SECTOR" conv=notrunc status=none
 
-if [[ "$BUILD_TARGET" == "licheerv_nano_w_riscv" ]]; then
+if [[ "$BUILD_TARGET" == "licheerv_nano_w_riscv" && -z "$LICHEERV_NANO_BASE_SD_IMAGE" ]]; then
   ROOTFS_PART_SIZE_SECTORS=$((TOTAL_SECTORS - ROOTFS_START_SECTOR))
   ROOTFS_INPUT_DIR="$OUT_DIR/rootfs_input"
   ROOTFS_IMG="$OUT_DIR/rootfs.sd"
