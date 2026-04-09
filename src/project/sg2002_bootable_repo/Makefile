@@ -15,7 +15,7 @@ RV_CFLAGS := -march=$(RV_MARCH) -mabi=$(RV_MABI) -mcmodel=medany -ffreestanding 
 RV_LDFLAGS := -nostdlib -nostartfiles -Wl,--build-id=none
 OUT ?= build
 TINYUSB_SRCS := third_party/tinyusb/src/tusb.c third_party/tinyusb/src/class/cdc/cdc_device.c third_party/tinyusb/src/portable/synopsys/dwc2/dcd_dwc2.c
-COMMON_SRCS := shared/uart.c shared/timer.c shared/mailbox.c shared/cache.c shared/c906_cache_ops.c shared/memory.c shared/shared_state.c shared/usb_serial.c shared/usb_descriptors.c shared/usb_dwc2_board.c shared/worker_release.c shared/worker_reset_sg200x.c shared/image.c shared/platform.c shared/trap.c shared/trap_entry.S shared/riscv_identity.c shared/riscv_csrs.S $(TINYUSB_SRCS)
+COMMON_SRCS := shared/uart.c shared/timer.c shared/mailbox.c shared/cache.c shared/c906_cache_ops.c shared/memory.c shared/shared_state.c shared/usb_serial.c shared/usb_descriptors.c shared/usb_dwc2_board.c shared/worker_release.c shared/worker_reset_sg200x.c shared/image.c shared/platform.c shared/trap.c shared/trap_entry.S shared/trap_entry_supervisor.S shared/riscv_identity.c shared/riscv_csrs.S $(TINYUSB_SRCS)
 HEADERS := $(shell find include third_party/tinyusb/src -name '*.h' -print)
 BOOT_SRCS := bootloader/start.S bootloader/main.c $(COMMON_SRCS)
 KERNEL_SRCS := kernel/start.S kernel/main.c $(COMMON_SRCS)

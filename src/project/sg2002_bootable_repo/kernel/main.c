@@ -235,14 +235,27 @@ static void handle_console(shared_ctrl_t *ctl) {
     }
 }
 
-void kernel_main(void) {
+static void ensure_watchdog_started(shared_ctrl_t *ctl) {
+    if (ctl->system_stage >= STAGE_WATCHDOG_BOOT)
+        return;
+
+    ctl_set_stage(ctl, STAGE_WATCHDOG_BOOT);
+    console_puts("[kernel] starting 8051 watchdog\n");
+    sg2002_boot_8051(FW8051_DDR_ADDR);
+}
+
+void kernel_main(uintptr_t hartid, uintptr_t dtb_addr) {
     shared_ctrl_t *ctl = shared_ctrl();
     console_puts("Kraken kernel start\n");
+    console_puts("[kernel] hart @ 0x"); console_puthex((uint32_t)hartid); console_puts("\n");
+    console_puts("[kernel] dtb @ 0x"); console_puthex((uint32_t)dtb_addr); console_puts("\n");
 
     ctl_invalidate(ctl);
     if (ctl->magic != KRAKEN_MAGIC || ctl->version != KRAKEN_VERSION)
         ctl_init_defaults(ctl);
-    ctl_note_riscv_identity(ctl, RISCV_ID_KERNEL);
+    ctl_note_boot_abi(ctl, (uint32_t)hartid, dtb_addr);
+    ctl_note_riscv_boot_identity(ctl, RISCV_ID_KERNEL, (uint32_t)hartid);
+    ensure_watchdog_started(ctl);
 
     ctl->system_flags &= ~SYSF_BOOTLOADER_ACTIVE;
     ctl->system_flags |= SYSF_KERNEL_ACTIVE;

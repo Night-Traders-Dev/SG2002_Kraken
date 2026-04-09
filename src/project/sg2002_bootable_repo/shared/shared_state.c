@@ -42,6 +42,12 @@ uint32_t ctl_next_cmd_seq(shared_ctrl_t *ctl) {
     return ctl->kernel_cmd_seq;
 }
 
+void ctl_note_boot_abi(shared_ctrl_t *ctl, uint32_t hartid, uintptr_t dtb_addr) {
+    ctl->boot_hartid = hartid;
+    ctl->boot_dtb_addr = (uint32_t)dtb_addr;
+    ctl_flush(ctl);
+}
+
 void ctl_fault_log(shared_ctrl_t *ctl, uint32_t tag, uint32_t code,
                    uint32_t arg0, uint32_t arg1) {
     uint32_t slot = ctl->fault_log_head & (KRAKEN_FAULT_LOG_SIZE - 1u);

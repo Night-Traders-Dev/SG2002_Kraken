@@ -256,8 +256,8 @@ typedef struct {
     volatile uint32_t trap_last_epc;
     volatile uint32_t trap_last_tval;
     volatile uint32_t trap_last_status;
-    volatile uint32_t reserved0;
-    volatile uint32_t reserved1;
+    volatile uint32_t boot_hartid;
+    volatile uint32_t boot_dtb_addr;
     volatile kraken_riscv_identity_t riscv_identity[RISCV_IDENTITY_SLOTS];
     volatile kraken_fault_record_t fault_log[KRAKEN_FAULT_LOG_SIZE];
     volatile uint8_t usb_rx_ring[USB_SERIAL_RING_SIZE];
@@ -307,12 +307,14 @@ void ctl_invalidate(shared_ctrl_t *ctl);
 void ctl_init_defaults(shared_ctrl_t *ctl);
 void ctl_set_stage(shared_ctrl_t *ctl, uint32_t stage);
 uint32_t ctl_next_cmd_seq(shared_ctrl_t *ctl);
+void ctl_note_boot_abi(shared_ctrl_t *ctl, uint32_t hartid, uintptr_t dtb_addr);
 void ctl_fault_log(shared_ctrl_t *ctl, uint32_t tag, uint32_t code,
                    uint32_t arg0, uint32_t arg1);
 void ctl_note_trap(shared_ctrl_t *ctl, uint32_t source_tag,
                    uint64_t mcause, uint64_t mepc,
                    uint64_t mtval, uint64_t mstatus);
 void ctl_note_riscv_identity(shared_ctrl_t *ctl, uint32_t slot);
+void ctl_note_riscv_boot_identity(shared_ctrl_t *ctl, uint32_t slot, uint32_t hartid);
 void ctl_set_platform_error(shared_ctrl_t *ctl, uint32_t error_mask);
 void ctl_clear_platform_error(shared_ctrl_t *ctl, uint32_t error_mask);
 

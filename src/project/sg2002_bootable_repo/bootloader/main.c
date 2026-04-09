@@ -17,11 +17,12 @@ static void boot_panic(shared_ctrl_t *ctl, uint32_t reason, uint32_t flags) {
     for (;;) cpu_relax();
 }
 
-void bootloader_main(void) {
+void bootloader_main(uintptr_t hartid, uintptr_t dtb_addr) {
     shared_ctrl_t *ctl = shared_ctrl();
 
     ctl_init_defaults(ctl);
-    ctl_note_riscv_identity(ctl, RISCV_ID_BOOTLOADER);
+    ctl_note_boot_abi(ctl, (uint32_t)hartid, dtb_addr);
+    ctl_note_riscv_boot_identity(ctl, RISCV_ID_BOOTLOADER, (uint32_t)hartid);
     ctl->system_flags |= SYSF_BOOTLOADER_ACTIVE;
     ctl_set_stage(ctl, STAGE_BOOTLOADER);
 #if KRAKEN_ENABLE_USB_DWC2_SCAFFOLD
@@ -29,6 +30,8 @@ void bootloader_main(void) {
 #endif
 
     console_puts("Kraken bootloader start\n");
+    console_puts("[boot] hart @ 0x"); console_puthex((uint32_t)hartid); console_puts("\n");
+    console_puts("[boot] dtb @ 0x"); console_puthex((uint32_t)dtb_addr); console_puts("\n");
     console_puts("[boot] kernel @ 0x"); console_puthex((uint32_t)KERNEL_LOAD_ADDR); console_puts("\n");
     console_puts("[boot] worker @ 0x"); console_puthex((uint32_t)WORKER_LOAD_ADDR); console_puts("\n");
 
