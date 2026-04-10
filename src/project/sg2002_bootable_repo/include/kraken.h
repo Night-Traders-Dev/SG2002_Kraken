@@ -12,10 +12,10 @@
 #define SG2002_DDR_BASE               0x80000000ull
 #define BOOTLOADER_LOAD_ADDR          0x80080000ull
 #define KERNEL_LOAD_ADDR              0x80100000ull
-#define 0x80300000              0x80170000ull
+#define SHARED_CTRL_ADDR         0x80300000ull
 #define WORKER_LOAD_ADDR              0x80180000ull
 #define WORKER_SHARED_TOP             0x801BFFFFull
-#define 0x83f80000               0x83F80000ull
+#define FW8051_DDR_ADDR          0x83f80000ull
 
 #define SG2002_UART0_BASE             0x04140000ull
 #define SG2002_AP_MAILBOX_BASE        0x03050000ull
@@ -71,10 +71,10 @@
 #define USB_SERIAL_PROTO_ACM          1u
 #define KRAKEN_STRLIT_BYTES(lit)      (sizeof(lit))
 #define KRAKEN_STRLIT_LEN(lit)        (sizeof(lit) - 1u)
-#define KRAKEN_PERSIST_LOG_ADDR       (0x80300000 + 0x4000ull)
+#define KRAKEN_PERSIST_LOG_ADDR       (SHARED_CTRL_ADDR + 0x4000ull)
 
-#ifndef 0x80400000
-#define 0x80400000           0x00000000ull
+#ifndef WORKER_STAGING_ADDR
+#define WORKER_STAGING_ADDR    0x80400000ull
 #endif
 #ifndef WORKER_IMAGE_MAX_BYTES
 #define WORKER_IMAGE_MAX_BYTES        (128u * 1024u)
@@ -389,20 +389,20 @@ _Static_assert(offsetof(shared_ctrl_t, watchdog_last_worker_seq) == 0x38,
                "8051 xdata offset mismatch: watchdog_last_worker_seq");
 _Static_assert(offsetof(shared_ctrl_t, watchdog_pet_count) == 0x3c,
                "8051 xdata offset mismatch: watchdog_pet_count");
-_Static_assert(sizeof(shared_ctrl_t) <= (WORKER_LOAD_ADDR - 0x80300000),
+_Static_assert(sizeof(shared_ctrl_t) <= (WORKER_LOAD_ADDR - SHARED_CTRL_ADDR),
                "shared_ctrl_t overflows its reserved DDR region");
 _Static_assert((KRAKEN_PERSIST_LOG_CAPACITY &
                 (KRAKEN_PERSIST_LOG_CAPACITY - 1u)) == 0u,
                "persistent log capacity must be a power of two");
 _Static_assert(KRAKEN_PERSIST_LOG_ADDR >=
-               (0x80300000 + sizeof(shared_ctrl_t)),
+               (SHARED_CTRL_ADDR + sizeof(shared_ctrl_t)),
                "persistent log overlaps shared_ctrl_t");
 _Static_assert((KRAKEN_PERSIST_LOG_ADDR + sizeof(kraken_persist_log_t)) <=
                WORKER_LOAD_ADDR,
                "persistent log overflows reserved shared DDR");
 
 static inline shared_ctrl_t *shared_ctrl(void) {
-    return (shared_ctrl_t *)(uintptr_t)0x80300000;
+    return (shared_ctrl_t *)(uintptr_t)SHARED_CTRL_ADDR;
 }
 
 static inline kraken_persist_log_t *persistent_log(void) {
