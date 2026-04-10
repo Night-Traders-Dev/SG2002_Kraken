@@ -14,6 +14,7 @@
 #define KERNEL_LOAD_ADDR              0x80100000ull
 #define SHARED_CTRL_ADDR         0x80300000ull
 #define WORKER_LOAD_ADDR              0x80180000ull
+#define KRAKEN_SHARED_RESERVED_BYTES  0x10000ull
 #define WORKER_SHARED_TOP             0x801BFFFFull
 #define FW8051_DDR_ADDR          0x83f80000ull
 
@@ -71,7 +72,7 @@
 #define USB_SERIAL_PROTO_ACM          1u
 #define KRAKEN_STRLIT_BYTES(lit)      (sizeof(lit))
 #define KRAKEN_STRLIT_LEN(lit)        (sizeof(lit) - 1u)
-#define KRAKEN_PERSIST_LOG_ADDR       (SHARED_CTRL_ADDR + 0x4000ull)
+#define KRAKEN_PERSIST_LOG_ADDR       (SHARED_CTRL_ADDR + KRAKEN_SHARED_RESERVED_BYTES)
 
 #ifndef WORKER_STAGING_ADDR
 #define WORKER_STAGING_ADDR    0x80400000ull
@@ -389,8 +390,8 @@ _Static_assert(offsetof(shared_ctrl_t, watchdog_last_worker_seq) == 0x38,
                "8051 xdata offset mismatch: watchdog_last_worker_seq");
 _Static_assert(offsetof(shared_ctrl_t, watchdog_pet_count) == 0x3c,
                "8051 xdata offset mismatch: watchdog_pet_count");
-_Static_assert(sizeof(shared_ctrl_t) <= (WORKER_LOAD_ADDR - SHARED_CTRL_ADDR),
-               "shared_ctrl_t overflows its reserved DDR region");
+_Static_assert(sizeof(shared_ctrl_t) <= KRAKEN_SHARED_RESERVED_BYTES,
+               "shared_ctrl_t exceeds shared control reservation");
 _Static_assert((KRAKEN_PERSIST_LOG_CAPACITY &
                 (KRAKEN_PERSIST_LOG_CAPACITY - 1u)) == 0u,
                "persistent log capacity must be a power of two");
