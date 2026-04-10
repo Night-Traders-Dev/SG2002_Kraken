@@ -44,19 +44,12 @@ static void do_signal_reset(uint32_t reason) {
     system_flags |= 0x80000000UL;  /* SYSF_WATCHDOG_TIMEOUT */
 
     /* Feed the hardware RTCSYS WDT before final reset */
-    MMIO32(SG2002_RTCSYS_WDT_BASE + 0x00) = 0x1999u;  /* WDT_CR - feed */
-    MMIO32(SG2002_RTCSYS_WDT_BASE + 0x04) = 0x0666u;  /* WDT_TORR - reload */
+    (*(__xdata volatile uint32_t *)0x0502D000) = 0x1999u;  /* WDT_CR - feed */
+    (*(__xdata volatile uint32_t *)0x0502D004) = 0x0666u;  /* WDT_TORR - reload */
 
     /* Trigger hardware reset */
-    MMIO32(SG2002_RTC_SOFT_RSTN) = 0u;  /* Full system warm reset */
+    (*(__xdata volatile uint32_t *)0x05025000) = 0u;  /* Full system warm reset */
 
-    for (;;) {
-        pet_hw();
-    }
-}
-
-    reset_reason = reason;
-    system_flags |= 0x80000000UL;
     for (;;) {
         pet_hw();
     }

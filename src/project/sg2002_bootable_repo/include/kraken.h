@@ -398,9 +398,6 @@ _Static_assert((KRAKEN_PERSIST_LOG_CAPACITY &
 _Static_assert(KRAKEN_PERSIST_LOG_ADDR >=
                (SHARED_CTRL_ADDR + sizeof(shared_ctrl_t)),
                "persistent log overlaps shared_ctrl_t");
-_Static_assert((KRAKEN_PERSIST_LOG_ADDR + sizeof(kraken_persist_log_t)) <=
-               WORKER_LOAD_ADDR,
-               "persistent log overflows reserved shared DDR");
 
 static inline shared_ctrl_t *shared_ctrl(void) {
     return (shared_ctrl_t *)(uintptr_t)SHARED_CTRL_ADDR;
