@@ -40,3 +40,5 @@
 - USB console TX now only queues while the host CDC ACM port is connected
 - stale USB TX bytes are dropped when the host deasserts DTR to avoid reconnect floods
 - device descriptor `bcdUSB` now advertises 0x0210 to match CDC IAD usage
+- Nano W vendor-DTB facts are now modeled in the scaffold: DWC2 MMIO `0x04340000`, companion USB syscon `0x03006000`, and `PLIC` source `30`
+- TinyUSB's DWC2 task now has a minimal `PLIC` claim/complete polling path so it can drain pending USB IRQs without full trap-return support yet

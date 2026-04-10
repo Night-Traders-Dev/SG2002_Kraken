@@ -18,6 +18,11 @@ Board assumptions for this tree:
 - `shared/` — common MMIO, mailbox, shared-state, console, and USB-serial code
 - `tools/` — packaging helpers
 
+## Hardware references
+
+- see `docs/HARDWARE_REFERENCES.md` for the local SG2002 TRM reference used by
+  this firmware tree
+
 ## Boot flow
 
 1. vendor FSBL/OpenSBI/U-Boot stages your images into DDR, either from a
@@ -73,8 +78,11 @@ The bare-metal DWC2 USB scaffold is now disabled by default. That keeps the
 status and platform-capability reports honest until EP0 handling and endpoint
 scheduling are implemented. The current CDC ACM experiment also avoids one class
 of reconnect loop by refusing to queue USB console output unless the host has
-opened the port and by dropping stale TX data when DTR deasserts. If you want
-to keep experimenting with the USB scaffold, build with:
+opened the port and by dropping stale TX data when DTR deasserts. On the Nano W
+the scaffold now also follows the vendor DTB for the core MMIO base
+(`0x04340000`), the companion USB syscon window (`0x03006000`), and the USB
+interrupt line (`PLIC` source `30`). If you want to keep experimenting with the
+USB scaffold, build with:
 
 `make EXTRA_CFLAGS='-DKRAKEN_ENABLE_USB_DWC2_SCAFFOLD=1'`
 

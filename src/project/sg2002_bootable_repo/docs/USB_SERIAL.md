@@ -22,16 +22,18 @@ This tree now includes a **TinyUSB-shaped device stack scaffold** for SG2002.
 This is **not yet a full upstream TinyUSB import**. It is a compile-clean scaffold that gives the repo:
 
 - the right file layout for a later drop-in of upstream TinyUSB
-- a real SG2002 DWC2 base-address integration point
+- a real SG2002 DWC2 base-address integration point at `0x04340000`
+- the Nano W companion USB syscon window at `0x03006000`
+- the Nano W vendor-DTB USB interrupt line (`PLIC` source `30`)
 - a CDC ACM console API boundary in the kernel
-- a place to add EP0 control handling, descriptor responses, endpoint scheduling, and PLIC interrupt routing
+- a minimal `PLIC` claim/complete polling path so the scaffold can consume pending USB IRQs without needing a full trap-return implementation yet
 - a small amount of reconnect hygiene in the CDC ACM path so stale TX data is not replayed after the host closes and reopens the port
 
 ## What still needs to be finished
 
 1. EP0 setup packet handling and descriptor responses
 2. Bulk IN/OUT endpoint scheduling for CDC ACM
-3. Correct PLIC interrupt hookup for the USB controller
+3. Trap-driven supervisor external interrupt handling instead of claim/complete polling from `tud_task()`
 4. Final SG2002 clock/reset/PHY sequencing from the TRM
 5. FIFO sizing validation on hardware
 

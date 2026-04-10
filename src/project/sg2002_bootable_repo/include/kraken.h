@@ -39,6 +39,8 @@
 #define SG2002_USB_HOST_BASE          0x040D0000ull
 #define SG2002_USB_DEV_BASE           0x040E0000ull
 #define SG2002_USB_DWC2_BASE          0x04340000ull
+#define SG2002_USB_CTRL_SYS_BASE      0x03006000ull
+#define SG2002_USB_CTRL_SYS_SIZE      0x00000058ull
 #define SG2002_USB_CTRL0_REG          (SG2002_TOP_MISC_BASE + 0x38)
 #define SG2002_USB_PHY_CTRL_REG       (SG2002_TOP_MISC_BASE + 0x48)
 #define SG2002_USB_CTRL0_DEVICE_MODE  (1u << 0)
@@ -56,8 +58,14 @@
  * code base in the upper bits and 0x84 in the low bits. Keep that low-bit
  * contract until the full SG200X 8051 register layout is modeled here. */
 #define SG2002_RTCSYS_MCU51_DDR_BOOT_FLAGS 0x84u
+#define SG2002_PLIC_BASE              0x70000000ull
+#define SG2002_PLIC_ENABLE_BASE       (SG2002_PLIC_BASE + 0x00002000ull)
+#define SG2002_PLIC_ENABLE_STRIDE     0x00000080ull
+#define SG2002_PLIC_CONTEXT_BASE      (SG2002_PLIC_BASE + 0x00200000ull)
+#define SG2002_PLIC_CONTEXT_STRIDE    0x00001000ull
+#define SG2002_PLIC_SMODE_CONTEXT     1u
 #ifndef SG2002_USB_DWC2_IRQ
-#define SG2002_USB_DWC2_IRQ           14u
+#define SG2002_USB_DWC2_IRQ           30u
 #endif
 
 #define KRAKEN_MAGIC                  0x4B52414Bu
@@ -501,6 +509,9 @@ void console_puthex(uint32_t v);
 void console_puthex64(uint64_t v);
 
 void sg2002_usb_board_init(void);
+void sg2002_usb_plic_init(void);
+uint32_t sg2002_usb_plic_claim(void);
+void sg2002_usb_plic_complete(uint32_t irq);
 uint32_t sg2002_platform_caps(void);
 void sg2002_user_led_init(void);
 void sg2002_user_led_set(int on);

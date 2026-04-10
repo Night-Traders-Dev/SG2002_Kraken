@@ -110,6 +110,7 @@ static void dwc2_enable_interrupts(void) {
 static void dcd_init(uint8_t rhport) {
     s_dwc2.rhport = rhport;
     sg2002_usb_board_init();
+    sg2002_usb_plic_init();
     DWC2->gahbcfg = 0;
     DWC2->gusbcfg |= DWC2_GUSBCFG_PHYSEL;
     dwc2_core_soft_reset();
@@ -120,11 +121,27 @@ static void dcd_init(uint8_t rhport) {
 }
 
 static void dcd_task(void) {
-    /*
-     * This scaffold intentionally leaves descriptor parsing and endpoint
-     * scheduling to a later upstream TinyUSB import. Keeping the task entry
-     * here makes that drop-in mechanical.
-     */
+    for (uint32_t budget = 0; budget < 4u; ++budget) {
+        uint32_t irq = sg2002_usb_plic_claim();
+
+        if (irq == 0u)
+            break;
+
+        if (irq == SG2002_USB_DWC2_IRQ) {
+            dcd_int_handler(s_dwc2.rhport);
+            sg2002_usb_plic_complete(irq);
+            continue;
+        }
+
+        /* Unexpected IRQ on the same S-mode context. Complete it so we do not
+         * wedge the claim register while the rest of the platform is still
+         * using a polling-only interrupt model. */
+        sg2002_usb_plic_complete(irq);
+        break;
+    }
+
+    if ((DWC2->gintsts & DWC2->gintmsk) != 0u)
+        dcd_int_handler(s_dwc2.rhport);
 }
 
 void dcd_int_handler(uint8_t rhport) {
