@@ -6,4 +6,6 @@ Public bring-up reports note that the OpenSBI environment may reserve low RAM an
 Practical implications:
 - Avoid placing your payload at the very start of DRAM.
 - Keep worker image and shared memory near the top of the worker-visible area.
+- For the Nano W `boot.sd` path, treat `bootloader.bin` as the U-Boot-entered
+  manager payload and preload `kernel.bin` as a secondary loadable image.
 - If you later switch to M-mode or vendor SPL handoff, revisit the linker addresses.

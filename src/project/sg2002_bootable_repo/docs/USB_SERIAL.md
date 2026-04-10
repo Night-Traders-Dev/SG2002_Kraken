@@ -28,13 +28,17 @@ This is **not yet a full upstream TinyUSB import**. It is a compile-clean scaffo
 - a CDC ACM console API boundary in the kernel
 - a minimal `PLIC` claim/complete polling path so the scaffold can consume pending USB IRQs without needing a full trap-return implementation yet
 - a small amount of reconnect hygiene in the CDC ACM path so stale TX data is not replayed after the host closes and reopens the port
+- documented DWC2 device-mode setup steps from the SG2002 TRM:
+  `SOFT_RSTN_0[USB]`, `SOFT_RSTN_1[USB_PHY]`, `GUSBCFG.ForceDevMode`, and
+  `DCTL.SftDiscon`
 
 ## What still needs to be finished
 
 1. EP0 setup packet handling and descriptor responses
 2. Bulk IN/OUT endpoint scheduling for CDC ACM
 3. Trap-driven supervisor external interrupt handling instead of claim/complete polling from `tud_task()`
-4. Final SG2002 clock/reset/PHY sequencing from the TRM
+4. Final SG2002-specific clock and companion-syscon sequencing for the vendor
+   DTB window at `0x03006000` (the TRM leaves that range undocumented)
 5. FIFO sizing validation on hardware
 
 ## Build impact

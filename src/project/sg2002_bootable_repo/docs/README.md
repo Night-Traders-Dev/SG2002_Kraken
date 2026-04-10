@@ -148,9 +148,9 @@ runtime failures.
 
 For the Nano W ROM-boot path, `src/build.sh` now generates a `boot.sd` FIT
 payload that uses vendor U-Boot's normal `fatload ... boot.sd ; bootm ...`
-flow. The FIT now boots `kernel.bin` directly as the primary payload, carries
-the vendor `sg2002_licheervnano_sd` DTB, and preloads `worker.bin` plus
-`mars_mcu_fw.bin` through FIT `loadables`. You must still supply a
+flow. The FIT now boots `bootloader.bin` as the primary payload, carries the
+vendor `sg2002_licheervnano_sd` DTB, and preloads `kernel.bin`, `worker.bin`,
+plus `mars_mcu_fw.bin` through FIT `loadables`. You must still supply a
 vendor-built `fip.bin` for the card to be ROM-bootable.
 
 For bring-up without UART, the Nano W user LED now mirrors the major boot

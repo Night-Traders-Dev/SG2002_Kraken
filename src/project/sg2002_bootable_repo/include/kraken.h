@@ -25,14 +25,17 @@
 #define SG2002_RTCSYS_WDT_BASE        0x0502D000ull
 
 #define SG2002_TOP_MISC_BASE          0x03000000ull
-#define SG2002_TOP_MISC_RTC2AP_REG    (SG2002_TOP_MISC_BASE + 0x248)
 #define SG2002_GPIO0_BASE             0x03020000ull
 #define SG2002_SYS_C906L_CTRL_REG     (SG2002_TOP_MISC_BASE + 0x04)
 #define SG2002_SYS_C906L_BOOTADDR_LO  (SG2002_TOP_MISC_BASE + 0x20)
 #define SG2002_SYS_C906L_BOOTADDR_HI  (SG2002_TOP_MISC_BASE + 0x24)
 #define SG2002_SYS_C906L_CTRL_EN      (1u << 13)
 #define SG200X_RESET_BASE             0x03003000ull
+#define SG200X_SOFT_RSTN0_REG         (SG200X_RESET_BASE + 0x00)
+#define SG200X_SOFT_RSTN1_REG         (SG200X_RESET_BASE + 0x04)
 #define SG200X_SOFT_CPU_RSTN_REG      (SG200X_RESET_BASE + 0x24)
+#define SG200X_RST_USB_BIT            11u
+#define SG200X_RST_USB_PHY_BIT        26u
 #define SG200X_RST_CPUSYS2_BIT        6u
 
 #define SG2002_USB_OTG_BASE           0x040C0000ull
@@ -41,23 +44,52 @@
 #define SG2002_USB_DWC2_BASE          0x04340000ull
 #define SG2002_USB_CTRL_SYS_BASE      0x03006000ull
 #define SG2002_USB_CTRL_SYS_SIZE      0x00000058ull
-#define SG2002_USB_CTRL0_REG          (SG2002_TOP_MISC_BASE + 0x38)
 #define SG2002_USB_PHY_CTRL_REG       (SG2002_TOP_MISC_BASE + 0x48)
-#define SG2002_USB_CTRL0_DEVICE_MODE  (1u << 0)
-#define SG2002_USB_PHY_CTRL_ENABLE    (1u << 0)
-#define SG2002_USB_PHY_CTRL_PLL_EN    (1u << 1)
+#define SG2002_USB_PHY_CTRL_EXTERNAL_VBUSVALID (1u << 0)
+#define SG2002_USB_PHY_CTRL_DRIVE_VBUS         (1u << 1)
+#define SG2002_USB_PHY_CTRL_IDPAD_OVR_EN       (1u << 6)
+#define SG2002_USB_PHY_CTRL_IDPAD_OVR_VAL      (1u << 7)
 #define SG2002_GPIO_SWPORTA_DR        (SG2002_GPIO0_BASE + 0x00)
 #define SG2002_GPIO_SWPORTA_DDR       (SG2002_GPIO0_BASE + 0x04)
 #define SG2002_PINMUX_GPIOA14_REG     (SG2002_TOP_MISC_BASE + 0x1038)
+#define SG2002_RTC_CTRL0_UNLOCK_REG   (SG2002_RTC_CTRL_BASE + 0x004)
+#define SG2002_RTC_CTRL0_REG          (SG2002_RTC_CTRL_BASE + 0x008)
+#define SG2002_RTC_EN_WARM_RST_REQ_REG (SG2002_RTC_CTRL_BASE + 0x0cc)
+#define SG2002_RTC_EN_WDG_RST_REQ_REG  (SG2002_RTC_CTRL_BASE + 0x0e0)
 #define SG2002_RTCSYS_RST_CTRL_REG    (SG2002_RTC_CTRL_BASE + 0x018)
 #define SG2002_RTCSYS_MCU51_CTRL0_REG (SG2002_RTC_CTRL_BASE + 0x020)
 #define SG2002_RTCSYS_MCU51_CTRL1_REG (SG2002_RTC_CTRL_BASE + 0x024)
+#define SG2002_RTCSYS_PMU_REG         (SG2002_RTC_CTRL_BASE + 0x028)
+#define SG2002_RTCSYS_PMU2_REG        (SG2002_RTC_CTRL_BASE + 0x054)
+#define SG2002_RTCSYS_IP_PWR_REQ_REG  (SG2002_RTC_CTRL_BASE + 0x080)
+#define SG2002_RTCSYS_IP_ISO_CTRL_REG (SG2002_RTC_CTRL_BASE + 0x084)
+#define SG2002_RTCSYS_WDT_CTRL_REG    (SG2002_RTC_CTRL_BASE + 0x0a0)
+#define SG2002_RTCSYS_POR_RST_CTRL_REG (SG2002_RTC_CTRL_BASE + 0x0ac)
 #define SG2002_RTCSYS_RST_CTRL_MCU51_BIT   (1u << 1)
-#define SG2002_TOP_MISC_RTC2AP_ENABLE      0x1u
-/* Vendor DDR launchers program rtcsys_mcu51_ctrl0 with the 2 KiB-aligned
- * code base in the upper bits and 0x84 in the low bits. Keep that low-bit
- * contract until the full SG200X 8051 register layout is modeled here. */
-#define SG2002_RTCSYS_MCU51_DDR_BOOT_FLAGS 0x84u
+#define SG2002_RTCSYS_RST_CTRL_RTC2AP_BIT  (1u << 8)
+#define SG2002_RTCSYS_PMU_CLK25M_REQ_BIT   (1u << 15)
+#define SG2002_RTCSYS_PMU2_WKINT_DB_EN_BIT (1u << 0)
+#define SG2002_RTCSYS_IP_PWR_REQ_MCU_BIT   (1u << 2)
+#define SG2002_RTCSYS_IP_PWR_ACK_MCU_BIT   (1u << 18)
+#define SG2002_RTCSYS_IP_ISO_CTRL_MCU_BIT  (1u << 1)
+#define SG2002_RTCSYS_POR_RST_CTRL_RTCSYS_RESET_EN_BIT (1u << 0)
+#define SG2002_RTCSYS_MCU51_ROM_ADDR_SIZE_SHIFT 0u
+#define SG2002_RTCSYS_MCU51_ROM_ADDR_SIZE_MASK  0x1fu
+#define SG2002_RTCSYS_MCU51_MEM_EA_N_BIT        (1u << 5)
+#define SG2002_RTCSYS_MCU51_XDATA_MODE_BIT      (1u << 6)
+#define SG2002_RTCSYS_MCU51_ROM_ADDR_DEF_BIT    (1u << 7)
+/*
+ * Vendor DDR launchers use the Mars-style address definition together with a
+ * small external-ROM window size value when pointing the 8051 at a DDR-backed
+ * blob. Keep that known-good size value explicit instead of encoding it as an
+ * unexplained magic constant.
+ */
+#define SG2002_RTCSYS_MCU51_ROM_ADDR_SIZE_DDR  4u
+#define SG2002_RTC_CTRL0_UNLOCK_KEY      0xAB18u
+#define SG2002_RTC_CTRL0_REQ_WARM_RST    (1u << 4)
+#define SG2002_RTC_CTRL0_REQ_SW_WDG_RST  (1u << 5)
+#define SG2002_RTC_EN_WARM_RST_REQ_BIT   (1u << 0)
+#define SG2002_RTC_EN_WDG_RST_REQ_BIT    (1u << 0)
 #define SG2002_PLIC_BASE              0x70000000ull
 #define SG2002_PLIC_ENABLE_BASE       (SG2002_PLIC_BASE + 0x00002000ull)
 #define SG2002_PLIC_ENABLE_STRIDE     0x00000080ull
@@ -137,6 +169,10 @@
 #endif
 #ifndef KRAKEN_USER_LED_DIAG_GROUP_GAP_CYCLES
 #define KRAKEN_USER_LED_DIAG_GROUP_GAP_CYCLES 220000000u
+#endif
+#ifndef SG2002_USB_FORCE_MODE_SETTLE_CYCLES
+#define SG2002_USB_FORCE_MODE_SETTLE_CYCLES \
+    (KRAKEN_BOOT_CYCLES_PER_MS * 25u)
 #endif
 
 enum core_state {
@@ -532,6 +568,7 @@ int sg2002_validate_staged_image(uintptr_t addr, size_t max_len,
 void sg2002_copy_image(uintptr_t dst, uintptr_t src, size_t len, size_t *copied_len);
 int sg2002_release_worker_core(uintptr_t entry_addr);
 void sg2002_boot_8051(uintptr_t entry_addr);
+void sg2002_request_watchdog_reset(void) __attribute__((noreturn));
 typedef void (*kraken_entry_fn_t)(uintptr_t hartid, uintptr_t dtb_addr);
 void kraken_jump_to(uintptr_t entry_addr) __attribute__((noreturn));
 void kraken_trap_panic(uint64_t mcause, uint64_t mepc,

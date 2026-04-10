@@ -16,6 +16,10 @@ its default C906 boot configuration.
 ### 1. U-Boot or another staging loader
 Loads all four images and clears the shared control page.
 
+For the Nano W ROM-boot SD path, vendor U-Boot loads `bootloader.bin` as the
+primary FIT payload from `boot.sd` and preloads `kernel.bin`, `worker.bin`,
+and `mars_mcu_fw.bin` through FIT `loadables`.
+
 If you enable manager-side worker staging, load `worker_staged.bin` at
 `WORKER_STAGING_ADDR` instead of preloading the raw `worker.bin` at `0x80380000`.
 

@@ -61,6 +61,7 @@ def fit_path_string(path):
 
 def render_its(package_dir, dtb_path, consts, configs):
     files = {
+        "bootloader": package_dir / "bootloader.bin",
         "kernel": package_dir / "kernel.bin",
         "worker": package_dir / "worker.bin",
         "watch8051": package_dir / "mars_mcu_fw.bin",
@@ -78,9 +79,9 @@ def render_its(package_dir, dtb_path, consts, configs):
                     f"""\
                     {config_name} {{
                         description = "boot Kraken firmware with board {config_name}";
-                        kernel = "kernel-1";
+                        kernel = "bootloader-1";
                         fdt = "fdt-sg2002_licheervnano_sd";
-                        loadables = "kraken_worker", "kraken_watch8051";
+                        loadables = "kraken_kernel", "kraken_worker", "kraken_watch8051";
                     }};
                     """
                 ).rstrip(),
@@ -97,17 +98,30 @@ def render_its(package_dir, dtb_path, consts, configs):
             #address-cells = <2>;
 
             images {{
-                kernel-1 {{
-                    description = "Kraken kernel";
-                    data = /incbin/("{fit_path_string(files["kernel"])}");
+                bootloader-1 {{
+                    description = "Kraken bootloader";
+                    data = /incbin/("{fit_path_string(files["bootloader"])}");
                     type = "kernel";
                     arch = "riscv";
                     os = "linux";
                     compression = "none";
+                    load = <0x0 0x{consts["BOOTLOADER_LOAD_ADDR"]:08x}>;
+                    entry = <0x0 0x{consts["BOOTLOADER_LOAD_ADDR"]:08x}>;
+                    hash-1 {{
+                        algo = "crc32";
+                    }};
+                }};
+
+                kraken_kernel {{
+                    description = "Kraken kernel";
+                    data = /incbin/("{fit_path_string(files["kernel"])}");
+                    type = "firmware";
+                    arch = "riscv";
+                    compression = "none";
                     load = <0x0 0x{consts["KERNEL_LOAD_ADDR"]:08x}>;
                     entry = <0x0 0x{consts["KERNEL_LOAD_ADDR"]:08x}>;
                     hash-1 {{
-                        algo = "crc32";
+                        algo = "sha256";
                     }};
                 }};
 

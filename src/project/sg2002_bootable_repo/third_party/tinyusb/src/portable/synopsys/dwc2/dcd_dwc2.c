@@ -52,6 +52,8 @@ typedef struct {
 
 #define DWC2_GAHBCFG_GINT         (1u << 0)
 #define DWC2_GUSBCFG_PHYSEL       (1u << 6)
+#define DWC2_GUSBCFG_FORCEHSTMODE (1u << 29)
+#define DWC2_GUSBCFG_FORCEDEVMODE (1u << 30)
 #define DWC2_GRSTCTL_CSRST        (1u << 0)
 #define DWC2_GINTSTS_USBRST       (1u << 12)
 #define DWC2_GINTSTS_ENUMDONE     (1u << 13)
@@ -60,7 +62,8 @@ typedef struct {
 #define DWC2_GINTSTS_IEPINT       (1u << 18)
 #define DWC2_GINTSTS_OEPINT       (1u << 19)
 #define DWC2_GINTSTS_RXFLVL       (1u << 4)
-#define DWC2_DCFG_DEVSPD_FS       0x3u
+#define DWC2_DCFG_DEVSPD_HS       0x0u
+#define DWC2_DCTL_SFTDISCON       (1u << 1)
 #define DWC2_FIFO_RX_WORDS        256u
 #define DWC2_FIFO_NPTX_WORDS       64u
 #define DWC2_FIFO_EP0_WORDS        64u
@@ -85,6 +88,12 @@ static void dwc2_wait_reset_clear(void) {
 static void dwc2_core_soft_reset(void) {
     DWC2->grstctl |= DWC2_GRSTCTL_CSRST;
     dwc2_wait_reset_clear();
+}
+
+static void dwc2_force_device_mode(void) {
+    DWC2->gusbcfg &= ~(DWC2_GUSBCFG_PHYSEL | DWC2_GUSBCFG_FORCEHSTMODE);
+    DWC2->gusbcfg |= DWC2_GUSBCFG_FORCEDEVMODE;
+    delay_cycles(SG2002_USB_FORCE_MODE_SETTLE_CYCLES);
 }
 
 static void dwc2_program_fifos(void) {
@@ -112,11 +121,13 @@ static void dcd_init(uint8_t rhport) {
     sg2002_usb_board_init();
     sg2002_usb_plic_init();
     DWC2->gahbcfg = 0;
-    DWC2->gusbcfg |= DWC2_GUSBCFG_PHYSEL;
+    dwc2_force_device_mode();
     dwc2_core_soft_reset();
-    DWC2->dcfg = DWC2_DCFG_DEVSPD_FS;
+    dwc2_force_device_mode();
+    DWC2->dcfg = DWC2_DCFG_DEVSPD_HS;
     dwc2_program_fifos();
     dwc2_enable_interrupts();
+    DWC2->dctl &= ~DWC2_DCTL_SFTDISCON;
     s_dwc2.initialized = 1;
 }
 

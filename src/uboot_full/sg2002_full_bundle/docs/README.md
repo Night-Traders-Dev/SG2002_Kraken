@@ -6,5 +6,6 @@ then jumps into the bootloader.
 
 For the LicheeRV Nano W RISC-V SD boot path, `src/build.sh` now also emits a
 vendor-style `boot.sd` FIT payload. That path is separate from this script
-bundle: `boot.sd` is meant for vendor U-Boot's automatic `bootm` flow, while
-`boot_sg2002_full.scr` remains the manual staging/debug path.
+bundle: `boot.sd` is meant for vendor U-Boot's automatic `bootm` flow into
+`bootloader.bin`, while `boot_sg2002_full.scr` remains the manual
+staging/debug path.

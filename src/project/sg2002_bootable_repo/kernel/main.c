@@ -13,7 +13,10 @@ static void kernel_panic(shared_ctrl_t *ctl, uint32_t reason, uint32_t flags) {
     ctl->reset_reason = reason;
     ctl->system_flags |= flags;
     ctl_set_stage(ctl, STAGE_PANIC);
+    ctl_flush(ctl);
     console_puts("[kernel] panic\n");
+    if ((flags & SYSF_WATCHDOG_TIMEOUT) != 0u)
+        sg2002_request_watchdog_reset();
     sg2002_user_led_panic_loop();
 }
 

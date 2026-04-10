@@ -26,6 +26,27 @@ static inline uint32_t sg2002_8051_window_base(uintptr_t addr) {
     return (uint32_t)(addr & ~0x7ffu);
 }
 
+static void rtc_ctrl0_unlock(void) {
+    MMIO32(SG2002_RTC_CTRL0_UNLOCK_REG) = SG2002_RTC_CTRL0_UNLOCK_KEY;
+}
+
+static void sg2002_8051_power_on_domain(void) {
+    uint32_t ip_pwr_req = MMIO32(SG2002_RTCSYS_IP_PWR_REQ_REG);
+    uint32_t iso_ctrl = MMIO32(SG2002_RTCSYS_IP_ISO_CTRL_REG);
+
+    ip_pwr_req |= SG2002_RTCSYS_IP_PWR_REQ_MCU_BIT;
+    MMIO32(SG2002_RTCSYS_IP_PWR_REQ_REG) = ip_pwr_req;
+    for (uint32_t i = 0; i < 100000u; ++i) {
+        if ((MMIO32(SG2002_RTCSYS_IP_PWR_REQ_REG) &
+             SG2002_RTCSYS_IP_PWR_ACK_MCU_BIT) != 0u)
+            break;
+        cpu_relax();
+    }
+
+    iso_ctrl &= ~SG2002_RTCSYS_IP_ISO_CTRL_MCU_BIT;
+    MMIO32(SG2002_RTCSYS_IP_ISO_CTRL_REG) = iso_ctrl;
+}
+
 uint32_t sg2002_platform_caps(void) {
     uint32_t caps = PLATCAP_RISCV_C906 |
                     PLATCAP_WORKER_RELEASE |
@@ -126,26 +147,51 @@ void sg2002_user_led_show_persist_summary(const kraken_persist_log_t *log) {
 
 void sg2002_boot_8051(uintptr_t entry_addr) {
     uint32_t rst_ctrl;
+    uint32_t ctrl0;
+    uint32_t ctrl1;
 
-    /* The 8051 needs two explicit mappings before it can run usefully:
-     *   - external ROM fetches from the DDR blob at FW8051_DDR_ADDR
-     *   - external RAM/XDATA window 0x0000.. maps onto SHARED_CTRL_ADDR
-     * Both windows are 2 KiB aligned on SG200X. */
-    MMIO32(SG2002_TOP_MISC_RTC2AP_REG) = SG2002_TOP_MISC_RTC2AP_ENABLE;
+    /* SG2002 TRM Chapter 14 / RTCSYS chapter:
+     *   1. power on the MCU domain and clear isolation
+     *   2. hold the 8051 in reset
+     *   3. program the external-ROM and XDATA windows
+     *   4. release reset
+     *
+     * We keep the vendor-observed DDR boot contract, but model the fields
+     * explicitly instead of OR-ing in an unexplained 0x84 constant.
+     */
+    sg2002_8051_power_on_domain();
+
+    MMIO32(SG2002_RTCSYS_PMU_REG) |= SG2002_RTCSYS_PMU_CLK25M_REQ_BIT;
+    MMIO32(SG2002_RTCSYS_PMU2_REG) |= SG2002_RTCSYS_PMU2_WKINT_DB_EN_BIT;
 
     rst_ctrl = MMIO32(SG2002_RTCSYS_RST_CTRL_REG);
+    rst_ctrl |= SG2002_RTCSYS_RST_CTRL_RTC2AP_BIT;
     MMIO32(SG2002_RTCSYS_RST_CTRL_REG) =
         rst_ctrl & ~SG2002_RTCSYS_RST_CTRL_MCU51_BIT;
 
-    MMIO32(SG2002_RTCSYS_MCU51_CTRL0_REG) =
-        sg2002_8051_window_base(entry_addr) |
-        SG2002_RTCSYS_MCU51_DDR_BOOT_FLAGS;
-    MMIO32(SG2002_RTCSYS_MCU51_CTRL1_REG) =
-        sg2002_8051_window_base(SHARED_CTRL_ADDR);
+    ctrl0 = sg2002_8051_window_base(entry_addr);
+    ctrl0 |= (SG2002_RTCSYS_MCU51_ROM_ADDR_SIZE_DDR &
+              SG2002_RTCSYS_MCU51_ROM_ADDR_SIZE_MASK)
+             << SG2002_RTCSYS_MCU51_ROM_ADDR_SIZE_SHIFT;
+    ctrl0 |= SG2002_RTCSYS_MCU51_ROM_ADDR_DEF_BIT;
+    ctrl1 = sg2002_8051_window_base(SHARED_CTRL_ADDR);
+
+    MMIO32(SG2002_RTCSYS_MCU51_CTRL0_REG) = ctrl0;
+    MMIO32(SG2002_RTCSYS_MCU51_CTRL1_REG) = ctrl1;
 
     MMIO32(SG2002_RTCSYS_RST_CTRL_REG) =
         rst_ctrl | SG2002_RTCSYS_RST_CTRL_MCU51_BIT;
     mailbox_send_8051(CMD_BOOT, (uint32_t)entry_addr);
+}
+
+void sg2002_request_watchdog_reset(void) {
+    MMIO32(SG2002_RTCSYS_POR_RST_CTRL_REG) |=
+        SG2002_RTCSYS_POR_RST_CTRL_RTCSYS_RESET_EN_BIT;
+    MMIO32(SG2002_RTC_EN_WDG_RST_REQ_REG) |= SG2002_RTC_EN_WDG_RST_REQ_BIT;
+    rtc_ctrl0_unlock();
+    MMIO32(SG2002_RTC_CTRL0_REG) = SG2002_RTC_CTRL0_REQ_SW_WDG_RST;
+    fence_rw();
+    for (;;) cpu_relax();
 }
 
 void kraken_jump_to(uintptr_t entry_addr) {

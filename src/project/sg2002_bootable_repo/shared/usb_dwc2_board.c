@@ -18,13 +18,18 @@ static uintptr_t plic_context_reg(uint32_t context, uint32_t offset) {
            offset;
 }
 
+static void sg2002_usb_deassert_resets(void) {
+    MMIO32(SG200X_SOFT_RSTN0_REG) |= (1u << SG200X_RST_USB_BIT);
+    MMIO32(SG200X_SOFT_RSTN1_REG) |= (1u << SG200X_RST_USB_PHY_BIT);
+}
+
 static void sg2002_usb_ctrl_sys_sync(void) {
     /*
      * The vendor Nano W DTB exposes a second USB companion/syscon window at
-     * 0x03006000 in addition to the DWC2 core itself. The register layout is
-     * still being decoded, so keep the interaction conservative for now:
-     * touch the first and last words so bring-up paths model the full USB
-     * block and future register sequencing has a stable home.
+     * 0x03006000 in addition to the DWC2 core itself, even though the TRM
+     * leaves that range undocumented. Keep the interaction conservative for
+     * now: touch the first and last words so bring-up paths model the full
+     * vendor block and future register sequencing has a stable home.
      */
     volatile uint32_t first = SG2002_USB_CTRL_SYS->regs[0];
     volatile uint32_t last =
@@ -34,20 +39,27 @@ static void sg2002_usb_ctrl_sys_sync(void) {
 }
 
 void sg2002_usb_board_init(void) {
+    uint32_t phy_ctrl;
+
     /*
      * SG2002-specific USB bring-up scaffold for the Nano W vendor DTB:
      *   - DWC2 core at 0x04340000
      *   - companion USB syscon window at 0x03006000
      *   - OTG mode with the board's single USB2.0 Type-C port
      *
-     * The real implementation still needs the final TRM-backed clock/reset/
-     * PHY sequence. These writes intentionally keep to the known top-misc USB
-     * helper registers used by vendor device trees while staying conservative.
+     * The TRM-backed parts we can safely do here are:
+     *   - deassert the documented USB and USB_PHY resets
+     *   - leave VBUS sourcing disabled in device mode
+     *
+     * Mode forcing itself is done through DWC2 GUSBCFG in dcd_dwc2.c, which is
+     * documented in the USBC chapter. The 0x03006000 window remains vendor-DTB
+     * specific until its register layout is decoded.
      */
+    sg2002_usb_deassert_resets();
     sg2002_usb_ctrl_sys_sync();
-    MMIO32(SG2002_USB_CTRL0_REG) |= SG2002_USB_CTRL0_DEVICE_MODE;
-    MMIO32(SG2002_USB_PHY_CTRL_REG) |= SG2002_USB_PHY_CTRL_ENABLE;
-    MMIO32(SG2002_USB_PHY_CTRL_REG) |= SG2002_USB_PHY_CTRL_PLL_EN;
+    phy_ctrl = MMIO32(SG2002_USB_PHY_CTRL_REG);
+    phy_ctrl &= ~SG2002_USB_PHY_CTRL_DRIVE_VBUS;
+    MMIO32(SG2002_USB_PHY_CTRL_REG) = phy_ctrl;
     sg2002_usb_ctrl_sys_sync();
     fence_rw();
 }
