@@ -27,12 +27,13 @@ static void maybe_stage_worker(shared_ctrl_t *ctl) {
 
     if (!sg2002_image_present(WORKER_LOAD_ADDR) &&
         sg2002_validate_staged_image(WORKER_STAGING_ADDR,
-                                     /* max_len = payload area + footer:
+                                     /* max_len covers the full staged blob:
+                                      * WORKER_IMAGE_MAX_BYTES of payload
+                                      * followed immediately by the footer.
                                       * sg2002_find_staged_image places the
                                       * footer at (max_len - sizeof(footer)),
-                                      * which lands exactly at
-                                      * WORKER_IMAGE_MAX_BYTES — the end of
-                                      * the payload region. */
+                                      * which lands at byte WORKER_IMAGE_MAX_BYTES
+                                      * — exactly where package_images.py writes it. */
                                      WORKER_IMAGE_MAX_BYTES +
                                          sizeof(kraken_staged_image_footer_t),
                                      KRAKEN_IMAGE_WORKER,
@@ -99,6 +100,11 @@ static void wait_for_worker_ack(shared_ctrl_t *ctl) {
         if (ctl->worker_boot_ack == KRAKEN_MAGIC &&
             (ctl->worker_state == CORE_IDLE || ctl->worker_state == CORE_RUNNING)) {
             ctl_clear_platform_error(ctl, PLATERR_WORKER_ACK_TIMEOUT);
+            /* Worker is online — clear transient restart/stale flags so the
+             * supervisor loop does not act on stale flag state from before
+             * the restart. */
+            ctl->system_flags &= ~(SYSF_WORKER_RESTARTING | SYSF_WORKER_STALE);
+            ctl_flush(ctl);
             console_puts("[kernel] worker online\n");
             return;
         }

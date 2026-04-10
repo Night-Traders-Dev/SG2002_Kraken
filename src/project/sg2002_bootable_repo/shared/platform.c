@@ -47,6 +47,50 @@ static void sg2002_8051_power_on_domain(void) {
     MMIO32(SG2002_RTCSYS_IP_ISO_CTRL_REG) = iso_ctrl;
 }
 
+/*
+ * sg2002_rtcsys_wdt_arm: Arm the RTCSYS hardware watchdog.
+ *
+ * Per SG2002 TRM (RTCSYS chapter), the WDT at SG2002_RTCSYS_WDT_BASE
+ * (0x0502D000) is a standard DesignWare WDT-compatible timer. To arm it:
+ *   1. Write 0x1ACCE551 to WDT_CR+4 (WDT_TORR) to unlock
+ *   2. Set the timeout period in WDT_TORR (offset 0x04)
+ *   3. Write WDT_CR (offset 0x00): set bit[0] (WDT_EN) and bit[1] (RMOD=reset)
+ *
+ * We choose a generous timeout (~2 seconds at 25 MHz RTCSYS clock) so normal
+ * boot variation does not spuriously fire. The 8051 watchdog signals the C906
+ * well before this deadline; the HW WDT is the last-resort backstop.
+ *
+ * RMOD=1 (bit1=0) means the first timeout generates an interrupt; RMOD=0
+ * (bit1=1, or bit1 clear) means direct system reset. We use direct reset
+ * (RMOD=0, only WDT_EN set) so a hung C906 cannot suppress the reset.
+ */
+#define SG2002_RTCSYS_WDT_CR    (SG2002_RTCSYS_WDT_BASE + 0x00ull)
+#define SG2002_RTCSYS_WDT_TORR  (SG2002_RTCSYS_WDT_BASE + 0x04ull)
+#define SG2002_RTCSYS_WDT_CRR   (SG2002_RTCSYS_WDT_BASE + 0x0cull)
+#define SG2002_WDT_UNLOCK_KEY   0x1ACCe551u
+#define SG2002_WDT_KICK_KEY     0x76u
+/* Timeout register value: period = 2^(TOP+16) / clk.
+ * TOP=0xf => 2^31 / 25MHz ~= 85s. TOP=0x8 => 2^24 / 25MHz ~= 0.67s.
+ * Use TOP=0xa => 2^26 / 25MHz ~= 2.7s — generous for boot, tight enough
+ * to catch a hard hang before the next reboot attempt. */
+#define SG2002_WDT_TIMEOUT_TOP  0xau
+
+static void sg2002_rtcsys_wdt_arm(void) {
+    /* Kick first in case the WDT was already running from a previous boot. */
+    MMIO32(SG2002_RTCSYS_WDT_CRR) = SG2002_WDT_KICK_KEY;
+    fence_rw();
+    /* Set timeout period (both initial and reload TOP). */
+    MMIO32(SG2002_RTCSYS_WDT_TORR) =
+        (SG2002_WDT_TIMEOUT_TOP << 4) | SG2002_WDT_TIMEOUT_TOP;
+    fence_rw();
+    /* Enable: WDT_EN=1, RMOD=0 (direct reset on first timeout). */
+    MMIO32(SG2002_RTCSYS_WDT_CR) = 0x1u;
+    fence_rw();
+    /* Kick immediately after enable so the counter starts from a full period. */
+    MMIO32(SG2002_RTCSYS_WDT_CRR) = SG2002_WDT_KICK_KEY;
+    fence_rw();
+}
+
 uint32_t sg2002_platform_caps(void) {
     uint32_t caps = PLATCAP_RISCV_C906 |
                     PLATCAP_WORKER_RELEASE |
@@ -126,13 +170,6 @@ void sg2002_user_led_show_persist_summary(const kraken_persist_log_t *log) {
     source = log->last_fault_tag != 0u ? log->last_fault_tag : log->last_trace_source;
     detail = log->last_fault_code != 0u ? log->last_fault_code : log->last_trace_code;
 
-    /*
-     * Replay the previous-boot summary as:
-     *   3 pulses  -> summary marker
-     *   N pulses  -> previous stage + 1
-     *   N pulses  -> previous source + 1
-     *   N pulses  -> low nibble of previous code + 1
-     */
     user_led_pulse_group(3u, KRAKEN_USER_LED_DIAG_DELAY_CYCLES);
     user_led_pulse_group((log->last_stage & 0x0fu) + 1u,
                          KRAKEN_USER_LED_DIAG_DELAY_CYCLES);
@@ -155,9 +192,7 @@ void sg2002_boot_8051(uintptr_t entry_addr) {
      *   2. hold the 8051 in reset
      *   3. program the external-ROM and XDATA windows
      *   4. release reset
-     *
-     * We keep the vendor-observed DDR boot contract, but model the fields
-     * explicitly instead of OR-ing in an unexplained 0x84 constant.
+     *   5. arm the RTCSYS hardware watchdog so a hung C906 causes a reset
      */
     sg2002_8051_power_on_domain();
 
@@ -182,6 +217,12 @@ void sg2002_boot_8051(uintptr_t entry_addr) {
     MMIO32(SG2002_RTCSYS_RST_CTRL_REG) =
         rst_ctrl | SG2002_RTCSYS_RST_CTRL_MCU51_BIT;
     mailbox_send_8051(CMD_BOOT, (uint32_t)entry_addr);
+
+    /* Arm the hardware watchdog after the 8051 is running. The 8051 watchdog
+     * firmware will signal SYSF_WATCHDOG_TIMEOUT to the C906 kernel if the
+     * kernel stops petting. If the C906 itself hangs and cannot respond, the
+     * RTCSYS HW WDT fires after ~2.7s and issues a hard reset. */
+    sg2002_rtcsys_wdt_arm();
 }
 
 void sg2002_request_watchdog_reset(void) {

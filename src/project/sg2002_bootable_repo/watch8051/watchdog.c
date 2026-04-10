@@ -31,6 +31,10 @@ static void pet_hw(void) {
  * SoC register access. Until a documented 8051-side reset sequence is wired up,
  * watchdog escalation is signal-only: set SYSF_WATCHDOG_TIMEOUT, record the
  * reason, and stop making forward progress so the next reset mechanism can act.
+ *
+ * The RTCSYS hardware WDT (armed by sg2002_rtcsys_wdt_arm in platform.c when
+ * the 8051 is booted) will fire after ~2.7s if the C906 kernel stops petting,
+ * providing the guaranteed hard-reset backstop.
  */
 static void do_signal_reset(uint32_t reason) {
     reset_reason = reason;
@@ -65,7 +69,8 @@ void main(void) {
             last_worker = worker_heartbeat;
             watchdog_last_worker_seq = last_worker;
             worker_timeout = 0;
-        } else if (worker_state == 3u && ++worker_timeout > 60000u) {
+        } else if (worker_state == 3u /* CORE_RUNNING; see enum core_state in kraken.h */
+                   && ++worker_timeout > 60000u) {
             do_signal_reset(0x80510002UL);
         }
     }

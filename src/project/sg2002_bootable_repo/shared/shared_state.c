@@ -120,8 +120,11 @@ void ctl_init_defaults(shared_ctrl_t *ctl) {
 void ctl_set_stage(shared_ctrl_t *ctl, uint32_t stage) {
     ctl->system_stage = stage;
     ctl_flush(ctl);
+    /* Use 0u for code — stage is already the primary key for PERSIST_EVT_STAGE
+     * records and recording it again as code is redundant. arg0 carries
+     * system_flags and arg1 carries reset_reason for diagnostics. */
     persist_append(ctl->boot_count, PERSIST_EVT_STAGE, 0u,
-                   stage, ctl->system_flags, ctl->reset_reason, stage);
+                   0u, ctl->system_flags, ctl->reset_reason, stage);
 }
 
 uint32_t ctl_next_cmd_seq(shared_ctrl_t *ctl) {
@@ -177,9 +180,15 @@ void ctl_trace_log(shared_ctrl_t *ctl, uint32_t source, uint32_t code,
 void ctl_note_trap(shared_ctrl_t *ctl, uint32_t source_tag,
                    uint64_t mcause, uint64_t mepc,
                    uint64_t mtval, uint64_t mstatus) {
-    uint32_t packed_mcause = (uint32_t)(mcause & 0x7fffffffu);
+    /* Preserve the full 63-bit exception code before narrowing to 32 bits.
+     * Masking with 0x7fffffff would silently drop bits 31-62 for any
+     * exception code >= 0x80000000 (none exist on SG2002 C906 today, but
+     * the mask was wrong regardless). Extract the interrupt bit separately
+     * and re-pack it into bit 31 of the 32-bit stored value. */
+    uint64_t code64 = mcause & ~(1ull << 63);
+    uint32_t packed_mcause = (uint32_t)(code64 & 0xffffffffu);
 
-    if ((mcause >> 63) != 0)
+    if ((mcause >> 63) != 0u)
         packed_mcause |= 0x80000000u;
 
     ctl->trap_count++;
@@ -188,10 +197,13 @@ void ctl_note_trap(shared_ctrl_t *ctl, uint32_t source_tag,
     ctl->trap_last_epc = (uint32_t)mepc;
     ctl->trap_last_tval = (uint32_t)mtval;
     ctl->trap_last_status = (uint32_t)mstatus;
+
+    /* Include mstatus (low 32 bits) as arg1 so it is preserved in both
+     * the trace ring and the persistent log for post-mortem analysis. */
     ctl_trace_log(ctl, source_tag, TRACE_TRAP_PANIC,
-                  packed_mcause, (uint32_t)mepc);
+                  packed_mcause, (uint32_t)mstatus);
     ctl_fault_log(ctl, source_tag, packed_mcause,
-                  (uint32_t)mepc, (uint32_t)mtval);
+                  (uint32_t)mepc, (uint32_t)mstatus);
 }
 
 void ctl_set_platform_error(shared_ctrl_t *ctl, uint32_t error_mask) {
