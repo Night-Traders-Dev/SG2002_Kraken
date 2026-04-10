@@ -4,10 +4,10 @@ setenv mmcdev 0
 setenv mmcpart 1
 setenv loadfs fatload
 
-setenv bootloader_addr 0x80080000
-setenv kernel_addr     0x80100000
-setenv shared_addr     0x80170000
-setenv worker_addr     0x80180000
+setenv bootloader_addr 0x80200000
+setenv kernel_addr     0x80280000
+setenv shared_addr     0x80300000
+setenv worker_addr     0x80380000
 setenv mcu_addr        0x83F80000
 
 setenv bootloader_file bootloader.bin

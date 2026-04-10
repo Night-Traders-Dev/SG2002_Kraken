@@ -3,7 +3,10 @@
 /*
  * Shared control page fields mirrored into 8051 xdata offsets.
  * These offsets match the early words in shared_ctrl_t in include/kraken.h.
- * If shared_ctrl_t changes, keep the mirrored offsets in sync.
+ * The AP-side boot code must map 8051 XDATA 0x0000 onto SHARED_CTRL_ADDR
+ * before releasing reset; otherwise these mirrored offsets will not land on
+ * the real shared control page. If shared_ctrl_t changes, keep the mirrored
+ * offsets in sync.
  */
 __xdata __at (0x0008) volatile uint32_t system_stage;
 __xdata __at (0x000c) volatile uint32_t system_flags;
@@ -23,32 +26,15 @@ static void pet_hw(void) {
 /*
  * Signal a watchdog reset request to the C906 side.
  *
- * This path does not directly drive a hardware reset line yet. It depends on
- * the vendor watchdog or the C906 kernel turning SYSF_WATCHDOG_TIMEOUT into a
- * real reset. Until the hardware watchdog path is wired up, this loop only
- * keeps the 8051 alive while the SoC waits for the next reset mechanism.
- */
-
-/*
- * do_signal_reset: Signal to the C906 kernel that a watchdog reset is needed
- * by setting SYSF_WATCHDOG_TIMEOUT in system_flags and recording the reason.
- *
- * This function now also writes to the hardware RTCSYS WDT to force a real
- * system reset after signaling the kernel.
- *
- * The RTCSYS WDT is armed by the vendor FSBL. When kernel_pet_seq stops advancing,
- * the WDT will fire and reset the SoC.
+ * This firmware does not issue direct MMIO resets. It is compiled for a small
+ * XDATA window that mirrors the shared control page, not for arbitrary 32-bit
+ * SoC register access. Until a documented 8051-side reset sequence is wired up,
+ * watchdog escalation is signal-only: set SYSF_WATCHDOG_TIMEOUT, record the
+ * reason, and stop making forward progress so the next reset mechanism can act.
  */
 static void do_signal_reset(uint32_t reason) {
     reset_reason = reason;
     system_flags |= 0x80000000UL;  /* SYSF_WATCHDOG_TIMEOUT */
-
-    /* Feed the hardware RTCSYS WDT before final reset */
-    (*(__xdata volatile uint32_t *)0x0502D000) = 0x1999u;  /* WDT_CR - feed */
-    (*(__xdata volatile uint32_t *)0x0502D004) = 0x0666u;  /* WDT_TORR - reload */
-
-    /* Trigger hardware reset */
-    (*(__xdata volatile uint32_t *)0x05025000) = 0u;  /* Full system warm reset */
 
     for (;;) {
         pet_hw();

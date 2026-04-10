@@ -7,7 +7,6 @@ Small machine-mode handoff layer that owns only the earliest post-U-Boot work:
 
 - initialize shared control state
 - sanity-check images already placed in DDR
-- start the 8051 watchdog image
 - jump to the main kernel image
 
 ### kernel/
@@ -15,6 +14,7 @@ Primary system controller on the main C906:
 
 - owns the platform state machine
 - boots/releases the worker core
+- maps and starts the 8051 watchdog once worker bring-up succeeds
 - supervises worker health and restarts it on fault/stall
 - exports a console over UART0 plus the shared USB serial rings
 
@@ -31,6 +31,7 @@ Low-power hardware supervisor:
 
 - watches kernel pet sequence
 - watches worker heartbeat when the worker is running
+- expects the AP-side boot code to map XDATA 0x0000 onto SHARED_CTRL_ADDR
 - records a reset reason before escalation
 
 ## Shared control ABI

@@ -10,13 +10,13 @@
 #define MMIO64(addr) (*(volatile uint64_t *)(uintptr_t)(addr))
 
 #define SG2002_DDR_BASE               0x80000000ull
-#define BOOTLOADER_LOAD_ADDR          0x80080000ull
-#define KERNEL_LOAD_ADDR              0x80100000ull
-#define SHARED_CTRL_ADDR         0x80300000ull
-#define WORKER_LOAD_ADDR              0x80180000ull
+#define BOOTLOADER_LOAD_ADDR          0x80200000ull
+#define KERNEL_LOAD_ADDR              0x80280000ull
+#define SHARED_CTRL_ADDR              0x80300000ull
+#define WORKER_LOAD_ADDR              0x80380000ull
 #define KRAKEN_SHARED_RESERVED_BYTES  0x10000ull
-#define WORKER_SHARED_TOP             0x801BFFFFull
-#define FW8051_DDR_ADDR          0x83f80000ull
+#define WORKER_SHARED_TOP             0x803BFFFFull
+#define FW8051_DDR_ADDR               0x83f80000ull
 
 #define SG2002_UART0_BASE             0x04140000ull
 #define SG2002_AP_MAILBOX_BASE        0x03050000ull
@@ -25,6 +25,7 @@
 #define SG2002_RTCSYS_WDT_BASE        0x0502D000ull
 
 #define SG2002_TOP_MISC_BASE          0x03000000ull
+#define SG2002_TOP_MISC_RTC2AP_REG    (SG2002_TOP_MISC_BASE + 0x248)
 #define SG2002_GPIO0_BASE             0x03020000ull
 #define SG2002_SYS_C906L_CTRL_REG     (SG2002_TOP_MISC_BASE + 0x04)
 #define SG2002_SYS_C906L_BOOTADDR_LO  (SG2002_TOP_MISC_BASE + 0x20)
@@ -46,6 +47,15 @@
 #define SG2002_GPIO_SWPORTA_DR        (SG2002_GPIO0_BASE + 0x00)
 #define SG2002_GPIO_SWPORTA_DDR       (SG2002_GPIO0_BASE + 0x04)
 #define SG2002_PINMUX_GPIOA14_REG     (SG2002_TOP_MISC_BASE + 0x1038)
+#define SG2002_RTCSYS_RST_CTRL_REG    (SG2002_RTC_CTRL_BASE + 0x018)
+#define SG2002_RTCSYS_MCU51_CTRL0_REG (SG2002_RTC_CTRL_BASE + 0x020)
+#define SG2002_RTCSYS_MCU51_CTRL1_REG (SG2002_RTC_CTRL_BASE + 0x024)
+#define SG2002_RTCSYS_RST_CTRL_MCU51_BIT   (1u << 1)
+#define SG2002_TOP_MISC_RTC2AP_ENABLE      0x1u
+/* Vendor DDR launchers program rtcsys_mcu51_ctrl0 with the 2 KiB-aligned
+ * code base in the upper bits and 0x84 in the low bits. Keep that low-bit
+ * contract until the full SG200X 8051 register layout is modeled here. */
+#define SG2002_RTCSYS_MCU51_DDR_BOOT_FLAGS 0x84u
 #ifndef SG2002_USB_DWC2_IRQ
 #define SG2002_USB_DWC2_IRQ           14u
 #endif
@@ -399,9 +409,22 @@ _Static_assert(sizeof(shared_ctrl_t) <= KRAKEN_SHARED_RESERVED_BYTES,
 _Static_assert((KRAKEN_PERSIST_LOG_CAPACITY &
                 (KRAKEN_PERSIST_LOG_CAPACITY - 1u)) == 0u,
                "persistent log capacity must be a power of two");
+_Static_assert((BOOTLOADER_LOAD_ADDR & 0x0fffull) == 0u,
+               "bootloader must remain page aligned");
+_Static_assert((KERNEL_LOAD_ADDR & 0x0fffull) == 0u,
+               "kernel must remain page aligned");
+_Static_assert((WORKER_LOAD_ADDR & 0x0fffull) == 0u,
+               "worker must remain page aligned");
+_Static_assert((SHARED_CTRL_ADDR & 0x07ffull) == 0u,
+               "shared control page must remain 2 KiB aligned for 8051 xdata");
+_Static_assert((FW8051_DDR_ADDR & 0x07ffull) == 0u,
+               "8051 firmware base must remain 2 KiB aligned");
 _Static_assert(KRAKEN_PERSIST_LOG_ADDR >=
                (SHARED_CTRL_ADDR + sizeof(shared_ctrl_t)),
                "persistent log overlaps shared_ctrl_t");
+_Static_assert((KRAKEN_PERSIST_LOG_ADDR + sizeof(kraken_persist_log_t)) <=
+               WORKER_LOAD_ADDR,
+               "persistent log overlaps worker image");
 
 static inline shared_ctrl_t *shared_ctrl(void) {
     return (shared_ctrl_t *)(uintptr_t)SHARED_CTRL_ADDR;

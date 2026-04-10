@@ -47,23 +47,23 @@ stage_files() {
 emit_next_steps() {
     cat <<TXT
 Next manual integration steps for your custom loader:
-- place bootloader.bin at 0x80080000
-- place kernel.bin at 0x80100000
-- place worker.bin at 0x80180000
+- place bootloader.bin at 0x80200000
+- place kernel.bin at 0x80280000
+- place worker.bin at 0x80380000
 - optionally place worker_staged.bin at WORKER_STAGING_ADDR if you enable manager-side worker staging
-- clear the shared control region at 0x80170000 before first boot
-- invoke 8051_up inside the staged directory if you are using the vendor 8051 loader
-- jump to bootloader.bin; it will start the 8051 and hand off to kernel.bin
+- clear the shared control region at 0x80300000 before first boot
+- keep 8051_up staged only if you want to compare against the vendor 8051 loader
+- jump to bootloader.bin; kernel.bin will later map and start the 8051 watchdog after worker bring-up
 TXT
 }
 
-start_8051() {
+note_vendor_8051_loader() {
     if [ "$RUN_8051_UP" != 1 ]; then
         log "skip 8051_up"
         return
     fi
     if [ -x "$STAGE_DIR/8051_up" ]; then
-        log "8051_up is staged and ready in $STAGE_DIR"
+        log "8051_up is staged in $STAGE_DIR for optional vendor-path comparisons"
     else
         log "8051_up not present; stage it manually if needed"
     fi
@@ -76,7 +76,7 @@ main() {
     need_file "$MCU_BIN"
     need_file "$BOOT_CFG"
     stage_files
-    start_8051
+    note_vendor_8051_loader
     emit_next_steps
 }
 

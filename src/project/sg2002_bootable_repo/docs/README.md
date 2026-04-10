@@ -24,9 +24,9 @@ Board assumptions for this tree:
    manual U-Boot script path or from the Nano W `fip.bin` + `boot.sd` SD path;
 2. `bootloader.bin` starts on the main C906;
 3. bootloader clears and initializes the shared control page;
-4. bootloader starts the 8051 watchdog firmware;
-5. bootloader hands off to `kernel.bin`;
-6. kernel verifies and releases `worker.bin` on the secondary C906;
+4. bootloader hands off to `kernel.bin`;
+5. kernel verifies and releases `worker.bin` on the secondary C906;
+6. kernel maps and starts the 8051 watchdog firmware once worker bring-up succeeds;
 7. kernel supervises the worker and pets the 8051 watchdog.
 
 ## Output artifacts

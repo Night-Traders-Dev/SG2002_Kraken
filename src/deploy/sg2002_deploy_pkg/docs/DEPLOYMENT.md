@@ -22,8 +22,10 @@ This package stages the new four-image layout:
 You still need to provide:
 
 - your own DDR writer or boot script to place all four binaries;
+- `bootloader.bin` at `0x80200000`, `kernel.bin` at `0x80280000`, and `worker.bin` at `0x80380000`;
 - a `WORKER_STAGING_ADDR` load step for `worker_staged.bin` if you choose kernel-side worker copying;
 - confirmation that the board remains strapped for C906 major-core boot instead of A53 boot;
-- clearing the shared control page at `0x80170000` before first boot;
+- clearing the shared control page at `0x80300000` before first boot;
 - any board-specific secondary-core reset deassert beyond the public top-misc enable bit;
+- letting `kernel.bin` map and release the 8051 watchdog image instead of relying on `bootloader.bin` or `8051_up` for the normal Kraken path;
 - an eventual native bare-metal USB device backend for the board's USB OTG Type-C port with full EP0, endpoint scheduling, and SG2002-specific interrupt wiring.

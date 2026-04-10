@@ -428,6 +428,11 @@ void kernel_main(uintptr_t hartid, uintptr_t dtb_addr) {
     uint32_t last_worker_hb = 0;
     for (;;) {
         ctl_invalidate(ctl);
+        if ((ctl->system_flags & SYSF_WATCHDOG_TIMEOUT) != 0u)
+            kernel_panic(ctl,
+                         ctl->reset_reason != 0u ? ctl->reset_reason
+                                                 : 0x8051ffffu,
+                         SYSF_WATCHDOG_TIMEOUT);
         ctl->kernel_heartbeat++;
         ctl->kernel_pet_seq++;
         ctl_flush(ctl);

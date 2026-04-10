@@ -22,6 +22,10 @@ static void user_led_pulse_group(uint32_t pulses, uint32_t pulse_delay_cycles) {
 #endif
 }
 
+static inline uint32_t sg2002_8051_window_base(uintptr_t addr) {
+    return (uint32_t)(addr & ~0x7ffu);
+}
+
 uint32_t sg2002_platform_caps(void) {
     uint32_t caps = PLATCAP_RISCV_C906 |
                     PLATCAP_WORKER_RELEASE |
@@ -121,10 +125,26 @@ void sg2002_user_led_show_persist_summary(const kraken_persist_log_t *log) {
 }
 
 void sg2002_boot_8051(uintptr_t entry_addr) {
-    MMIO32(SG2002_RTC_CTRL_BASE + 0x028) = 0x5a5a0001u;
-    MMIO32(SG2002_RTC_CTRL_BASE + 0x020) = (uint32_t)(entry_addr >> 11);
-    MMIO32(SG2002_RTC_CTRL_BASE + 0x024) = 0;
-    MMIO32(SG2002_RTC_CTRL_BASE + 0x02c) = 1;
+    uint32_t rst_ctrl;
+
+    /* The 8051 needs two explicit mappings before it can run usefully:
+     *   - external ROM fetches from the DDR blob at FW8051_DDR_ADDR
+     *   - external RAM/XDATA window 0x0000.. maps onto SHARED_CTRL_ADDR
+     * Both windows are 2 KiB aligned on SG200X. */
+    MMIO32(SG2002_TOP_MISC_RTC2AP_REG) = SG2002_TOP_MISC_RTC2AP_ENABLE;
+
+    rst_ctrl = MMIO32(SG2002_RTCSYS_RST_CTRL_REG);
+    MMIO32(SG2002_RTCSYS_RST_CTRL_REG) =
+        rst_ctrl & ~SG2002_RTCSYS_RST_CTRL_MCU51_BIT;
+
+    MMIO32(SG2002_RTCSYS_MCU51_CTRL0_REG) =
+        sg2002_8051_window_base(entry_addr) |
+        SG2002_RTCSYS_MCU51_DDR_BOOT_FLAGS;
+    MMIO32(SG2002_RTCSYS_MCU51_CTRL1_REG) =
+        sg2002_8051_window_base(SHARED_CTRL_ADDR);
+
+    MMIO32(SG2002_RTCSYS_RST_CTRL_REG) =
+        rst_ctrl | SG2002_RTCSYS_RST_CTRL_MCU51_BIT;
     mailbox_send_8051(CMD_BOOT, (uint32_t)entry_addr);
 }
 
