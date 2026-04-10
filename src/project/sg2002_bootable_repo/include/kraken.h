@@ -70,6 +70,10 @@
 #define KRAKEN_PERSIST_LOG_CAPACITY   256u
 #define USB_SERIAL_RING_SIZE          512u
 #define USB_SERIAL_PROTO_ACM          1u
+/* KRAKEN_STRLIT_BYTES: total storage including NUL (== sizeof(lit)).
+ * KRAKEN_STRLIT_LEN:   printable character count, excluding NUL (== sizeof(lit)-1).
+ * Use KRAKEN_STRLIT_LEN for memcmp length arguments so the NUL terminator in
+ * the literal is never included in the comparison. */
 #define KRAKEN_STRLIT_BYTES(lit)      (sizeof(lit))
 #define KRAKEN_STRLIT_LEN(lit)        (sizeof(lit) - 1u)
 #define KRAKEN_PERSIST_LOG_ADDR       (SHARED_CTRL_ADDR + KRAKEN_SHARED_RESERVED_BYTES)
@@ -346,11 +350,11 @@ typedef struct {
     volatile kraken_fault_record_t fault_log[KRAKEN_FAULT_LOG_SIZE];        /* 0x0f8 */
     volatile uint8_t usb_rx_ring[USB_SERIAL_RING_SIZE];                     /* 0x1f8 */
     volatile uint8_t usb_tx_ring[USB_SERIAL_RING_SIZE];                     /* 0x3f8 */
-    volatile uint32_t trace_log_head;
-    volatile uint32_t trace_log_count;
-    volatile uint32_t trace_last_source;
-    volatile uint32_t trace_last_code;
-    volatile kraken_trace_record_t trace_log[KRAKEN_TRACE_LOG_SIZE];
+    volatile uint32_t trace_log_head;           /* 0x5f8 */
+    volatile uint32_t trace_log_count;          /* 0x5fc */
+    volatile uint32_t trace_last_source;        /* 0x600 */
+    volatile uint32_t trace_last_code;          /* 0x604 */
+    volatile kraken_trace_record_t trace_log[KRAKEN_TRACE_LOG_SIZE]; /* 0x608 */
 } shared_ctrl_t;
 
 typedef struct {

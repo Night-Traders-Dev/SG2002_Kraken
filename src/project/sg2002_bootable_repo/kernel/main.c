@@ -24,7 +24,14 @@ static void maybe_stage_worker(shared_ctrl_t *ctl) {
 
     if (!sg2002_image_present(WORKER_LOAD_ADDR) &&
         sg2002_validate_staged_image(WORKER_STAGING_ADDR,
-                                     WORKER_IMAGE_MAX_BYTES + sizeof(footer),
+                                     /* max_len = payload area + footer:
+                                      * sg2002_find_staged_image places the
+                                      * footer at (max_len - sizeof(footer)),
+                                      * which lands exactly at
+                                      * WORKER_IMAGE_MAX_BYTES — the end of
+                                      * the payload region. */
+                                     WORKER_IMAGE_MAX_BYTES +
+                                         sizeof(kraken_staged_image_footer_t),
                                      KRAKEN_IMAGE_WORKER,
                                      WORKER_LOAD_ADDR,
                                      WORKER_LOAD_ADDR,
@@ -309,7 +316,9 @@ static void print_persist(shared_ctrl_t *ctl) {
 }
 
 static void handle_console(shared_ctrl_t *ctl) {
-    /* 64 bytes including the NUL terminator; longer lines are truncated. */
+    /* 64 bytes including the NUL terminator; longer lines are truncated.
+     * line_len tracks the number of printable bytes written (not including
+     * the NUL), so line[line_len] is always the NUL sentinel. */
     static char line[64];
     static uint32_t line_len = 0;
     char buf[32];
@@ -319,29 +328,43 @@ static void handle_console(shared_ctrl_t *ctl) {
         if (c == '\r') continue;
         if (c == '\n') {
             line[line_len] = '\0';
-            if (sg2002_memcmp(line, "status", sizeof("status")) == 0) {
+            /* Compare using KRAKEN_STRLIT_LEN (sizeof - 1) so the NUL
+             * terminator in the string literal is never included in the
+             * compare length, and guard with an exact length check first so
+             * we never read stale bytes beyond line_len. */
+            if (line_len == KRAKEN_STRLIT_LEN("status") &&
+                sg2002_memcmp(line, "status", KRAKEN_STRLIT_LEN("status")) == 0) {
                 print_status(ctl);
-            } else if (sg2002_memcmp(line, "cpu", sizeof("cpu")) == 0) {
+            } else if (line_len == KRAKEN_STRLIT_LEN("cpu") &&
+                       sg2002_memcmp(line, "cpu", KRAKEN_STRLIT_LEN("cpu")) == 0) {
                 print_cpu(ctl);
-            } else if (sg2002_memcmp(line, "trap", sizeof("trap")) == 0) {
+            } else if (line_len == KRAKEN_STRLIT_LEN("trap") &&
+                       sg2002_memcmp(line, "trap", KRAKEN_STRLIT_LEN("trap")) == 0) {
                 print_trap(ctl);
-            } else if (sg2002_memcmp(line, "faults", sizeof("faults")) == 0) {
+            } else if (line_len == KRAKEN_STRLIT_LEN("faults") &&
+                       sg2002_memcmp(line, "faults", KRAKEN_STRLIT_LEN("faults")) == 0) {
                 print_faults(ctl);
-            } else if (sg2002_memcmp(line, "trace", sizeof("trace")) == 0) {
+            } else if (line_len == KRAKEN_STRLIT_LEN("trace") &&
+                       sg2002_memcmp(line, "trace", KRAKEN_STRLIT_LEN("trace")) == 0) {
                 print_trace(ctl);
-            } else if (sg2002_memcmp(line, "persist", sizeof("persist")) == 0) {
+            } else if (line_len == KRAKEN_STRLIT_LEN("persist") &&
+                       sg2002_memcmp(line, "persist", KRAKEN_STRLIT_LEN("persist")) == 0) {
                 print_persist(ctl);
-            } else if (sg2002_memcmp(line, "persist-clear",
-                                      sizeof("persist-clear")) == 0) {
+            } else if (line_len == KRAKEN_STRLIT_LEN("persist-clear") &&
+                       sg2002_memcmp(line, "persist-clear",
+                                     KRAKEN_STRLIT_LEN("persist-clear")) == 0) {
                 ctl_persist_clear();
                 console_puts("[kernel] persistent log cleared\n");
-            } else if (sg2002_memcmp(line, "run", sizeof("run")) == 0) {
+            } else if (line_len == KRAKEN_STRLIT_LEN("run") &&
+                       sg2002_memcmp(line, "run", KRAKEN_STRLIT_LEN("run")) == 0) {
                 console_puts("[kernel] queue worker job\n");
                 send_worker_cmd(ctl, CMD_RUN_JOB, 0x1234u, 0);
-            } else if (sg2002_memcmp(line, "panic", sizeof("panic")) == 0) {
+            } else if (line_len == KRAKEN_STRLIT_LEN("panic") &&
+                       sg2002_memcmp(line, "panic", KRAKEN_STRLIT_LEN("panic")) == 0) {
                 console_puts("[kernel] inject worker panic\n");
                 send_worker_cmd(ctl, CMD_PANIC, 0, 0);
-            } else if (sg2002_memcmp(line, "stop", sizeof("stop")) == 0) {
+            } else if (line_len == KRAKEN_STRLIT_LEN("stop") &&
+                       sg2002_memcmp(line, "stop", KRAKEN_STRLIT_LEN("stop")) == 0) {
                 console_puts("[kernel] stop worker\n");
                 send_worker_cmd(ctl, CMD_STOP, 0, 0);
             } else if (line_len != 0) {

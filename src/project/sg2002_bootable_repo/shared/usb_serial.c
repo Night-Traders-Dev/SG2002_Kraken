@@ -34,7 +34,12 @@ static void pump_tx_to_tinyusb(shared_ctrl_t *ctl) {
             chunk[n++] = ctl->usb_tx_ring[ctl->usb_tx_tail];
             ctl->usb_tx_tail = ring_next(ctl->usb_tx_tail);
         }
-        if (tud_cdc_n_write(0, chunk, n) != n) break;
+        if (tud_cdc_n_write(0, chunk, n) != n) {
+            /* Partial write: flush whatever TinyUSB accepted so it is not
+             * held in its internal buffer until the next poll cycle. */
+            tud_cdc_n_write_flush(0);
+            break;
+        }
     }
     tud_cdc_n_write_flush(0);
 }
@@ -46,7 +51,14 @@ static void pump_rx_from_tinyusb(shared_ctrl_t *ctl) {
         if (take == 0) break;
         for (uint32_t i = 0; i < take; ++i) {
             uint32_t next = ring_next(ctl->usb_rx_head);
-            if (next == ctl->usb_rx_tail) return;
+            if (next == ctl->usb_rx_tail) {
+                /* RX ring is full. Stop writing but do not return — bytes
+                 * already consumed from TinyUSB's buffer in this chunk are
+                 * lost regardless; returning early would also abandon the
+                 * outer loop without giving the caller a chance to drain.
+                 * The next poll will retry if the ring has space again. */
+                break;
+            }
             ctl->usb_rx_ring[ctl->usb_rx_head] = chunk[i];
             ctl->usb_rx_head = next;
         }
@@ -97,7 +109,10 @@ void usb_serial_poll(void) {
     pump_tx_to_tinyusb(ctl);
 
     ctl->usb_state = tud_cdc_n_connected(0) ? USB_SERIAL_ACTIVE : USB_SERIAL_READY;
-    ctl->usb_flags = USB_SERIAL_PROTO_ACM | (tx_ring_used(ctl) << 16);
+    /* Mask tx_ring_used to 16 bits so usb_flags proto field is never corrupted
+     * if USB_SERIAL_RING_SIZE is ever increased beyond 65535. */
+    ctl->usb_flags = USB_SERIAL_PROTO_ACM |
+                     ((tx_ring_used(ctl) & 0xffffu) << 16);
     ctl_flush(ctl);
 }
 
