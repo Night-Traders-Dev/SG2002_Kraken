@@ -403,15 +403,21 @@ void kernel_main(uintptr_t hartid, uintptr_t dtb_addr) {
     console_puts("[kernel] dtb @ 0x"); console_puthex((uint32_t)dtb_addr); console_puts("\n");
 
     ctl_invalidate(ctl);
+    sg2002_user_led_blink(1);
     if (ctl->magic != KRAKEN_MAGIC || ctl->version != KRAKEN_VERSION)
         ctl_init_defaults(ctl);
+    sg2002_user_led_blink(1);
     ctl_note_boot_abi(ctl, (uint32_t)hartid, dtb_addr);
+    sg2002_user_led_blink(1);
     ctl_note_riscv_boot_identity(ctl, RISCV_ID_KERNEL, (uint32_t)hartid);
+    sg2002_user_led_blink(1);
     ctl_trace_log(ctl, FAULTSRC_KERNEL, TRACE_KERNEL_ENTRY,
                   (uint32_t)hartid, (uint32_t)dtb_addr);
+    sg2002_user_led_blink(1);
     ctl->system_flags &= ~SYSF_BOOTLOADER_ACTIVE;
     ctl->system_flags |= SYSF_KERNEL_ACTIVE;
     ctl_set_stage(ctl, STAGE_KERNEL_ENTRY);
+    sg2002_user_led_blink(4); // We aren't reaching here...
 #if KRAKEN_ENABLE_USB_DWC2_SCAFFOLD
     if (ctl->usb_state == USB_SERIAL_OFF) usb_serial_init();
 #endif
